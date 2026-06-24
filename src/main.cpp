@@ -159,7 +159,7 @@ static void meshSendWeatherText(uint8_t chanIdx) {
     hasData = true;
   }
   n += snprintf(msg + n, sizeof(msg) - n,
-                "\n📡 Vuoi la tua stazione meteo sulla mesh? urly.it/31f_d_");
+                "\n📡 Vuoi la tua stazione meteo sulla mesh? urly.it/31g1b7");
   if (!hasData) return;
   meshSendText(msg, chanIdx);
 }
