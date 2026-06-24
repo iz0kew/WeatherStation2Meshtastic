@@ -1,0 +1,37 @@
+{
+  "$schema_note": "Fonte di verità unica per configuratore web e configure_sensors.py. Aggiungere un sensore = una voce in 'sensors'.",
+  "groups": {
+    "A": { "label": "Fine Offset / Ecowitt + LaCrosse IT+/TFA", "bitrate_bps": 17241, "syncword": "0x2DD4" },
+    "B": { "label": "Bresser", "bitrate_bps": 8064, "syncword": "0x2DD4" }
+  },
+  "capabilities": {
+    "TEMP":      { "label": "Temperatura",         "screen": "SCREEN_TEMPHUM" },
+    "HUM":       { "label": "Umidità",             "screen": "SCREEN_TEMPHUM" },
+    "PRESSURE":  { "label": "Pressione",           "screen": "SCREEN_PRESSURE" },
+    "RAIN":      { "label": "Pioggia",             "screen": "SCREEN_RAIN" },
+    "WIND":      { "label": "Vento",               "screen": "SCREEN_WIND" },
+    "UV":        { "label": "UV / Luce",           "screen": "SCREEN_UV" },
+    "LIGHTNING": { "label": "Fulmini",             "screen": "SCREEN_LIGHTNING" },
+    "PM":        { "label": "Qualità aria (PM)",   "screen": "SCREEN_AQI" },
+    "CO2":       { "label": "CO2",                 "screen": "SCREEN_AQI" },
+    "SOIL":      { "label": "Umidità suolo",       "screen": "SCREEN_SOIL" },
+    "LEAK":      { "label": "Perdita acqua",       "screen": "SCREEN_LEAK" }
+  },
+  "sensors": [
+    { "id": "WH32",  "group": "A", "label": "Fine Offset WH32 / WH25 / WH65B", "type": "Temp / Umidità / Pressione",  "caps": ["TEMP","HUM","PRESSURE"],           "sources": ["sensors/fineoffset/wh32.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset.c" },
+    { "id": "WH31E", "group": "A", "label": "Ambient WH31E + WS68",            "type": "Thermo-hygro / Stazione",     "caps": ["TEMP","HUM"],                      "sources": ["sensors/fineoffset/wh31e.cpp"], "libs": [], "ref": "rtl_433/src/devices/ambientweather_wh31e.c" },
+    { "id": "WH40",  "group": "A", "label": "Ecowitt WH40",                   "type": "Pluviometro",                 "caps": ["RAIN"],                            "sources": ["sensors/fineoffset/wh40.cpp"],  "libs": [], "ref": "rtl_433/src/devices/ambientweather_wh31e.c" },
+    { "id": "WH57",  "group": "A", "label": "Ecowitt WH57 / WH31L",           "type": "Fulmini",                     "caps": ["LIGHTNING"],                       "sources": ["sensors/fineoffset/wh57.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset_wh31l.c" },
+    { "id": "WH51",  "group": "A", "label": "Ecowitt WH51 / WN31 / SM23",     "type": "Umidità suolo",               "caps": ["SOIL"],                            "sources": ["sensors/fineoffset/wh51.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset.c" },
+    { "id": "WH45",  "group": "A", "label": "Ecowitt WH45",                   "type": "Qualità aria (PM/CO2)",       "caps": ["PM","CO2","TEMP","HUM"],           "sources": ["sensors/fineoffset/wh45.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset_wh45.c" },
+    { "id": "WS80",  "group": "A", "label": "Fine Offset WS80",               "type": "Stazione (vento ultrasonico)","caps": ["TEMP","HUM","WIND","UV"],          "sources": ["sensors/fineoffset/ws80.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset_ws80.c" },
+    { "id": "WS90",  "group": "A", "label": "Fine Offset WS90 (Wittboy)",     "type": "Stazione 7-in-1",             "caps": ["TEMP","HUM","WIND","UV","RAIN"],   "sources": ["sensors/fineoffset/ws90.cpp"],  "libs": [], "ref": "rtl_433/src/devices/fineoffset_ws90.c" },
+    { "id": "TX35",  "group": "A", "label": "LaCrosse TX35 / TX29 / TFA",     "type": "Temp / Umidità",              "caps": ["TEMP","HUM"],                      "sources": ["sensors/lacrosse/tx35.cpp"],    "libs": [], "ref": "rtl_433/src/devices/lacrosse_tx35.c" },
+
+    { "id": "BRESSER_5IN1",      "group": "B", "label": "Bresser 5-in-1",             "type": "Stazione",              "caps": ["TEMP","HUM","WIND","RAIN"],             "sources": ["sensors/bresser/bresser_5in1.cpp"],     "libs": [], "ref": "rtl_433/src/devices/bresser_5in1.c" },
+    { "id": "BRESSER_6IN1",      "group": "B", "label": "Bresser 6-in-1 / 7-in-1",    "type": "Stazione / Suolo / Vento","caps": ["TEMP","HUM","WIND","RAIN","UV","SOIL"], "sources": ["sensors/bresser/bresser_6in1.cpp"],     "libs": [], "ref": "rtl_433/src/devices/bresser_6in1.c" },
+    { "id": "BRESSER_7IN1_AQ",   "group": "B", "label": "Bresser 7-in-1 Air Quality", "type": "Qualità aria",          "caps": ["PM","CO2"],                            "sources": ["sensors/bresser/bresser_7in1.cpp"],     "libs": [], "ref": "rtl_433/src/devices/bresser_7in1.c" },
+    { "id": "BRESSER_LIGHTNING", "group": "B", "label": "Bresser Lightning",          "type": "Fulmini",               "caps": ["LIGHTNING"],                           "sources": ["sensors/bresser/bresser_lightning.cpp"],"libs": [], "ref": "rtl_433/src/devices/bresser_lightning.c" },
+    { "id": "BRESSER_LEAKAGE",   "group": "B", "label": "Bresser Leakage",            "type": "Perdita acqua",         "caps": ["LEAK"],                                "sources": ["sensors/bresser/bresser_leakage.cpp"],  "libs": [], "ref": "rtl_433/src/devices/bresser_leakage.c" }
+  ]
+}

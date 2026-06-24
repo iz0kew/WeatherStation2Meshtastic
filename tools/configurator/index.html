@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WeatherStation2Meshtastic · Configuratore di build</title>
+<style>
+  :root{
+    --bg:#0d1517; --panel:#121d20; --panel-2:#0f181a; --line:#22322f;
+    --ink:#e6efee; --ink-dim:#8aa3a1; --ink-faint:#5c736f;
+    --amber:#f2a541; --amber-dim:#7a5a2a;     /* Gruppo A */
+    --cyan:#46d6c4; --cyan-dim:#235e57;       /* Gruppo B */
+    --danger:#e2685f;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #14211f 0%, transparent 60%),
+      var(--bg);
+    color:var(--ink); font-family:var(--sans); line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:28px 22px 80px}
+
+  /* ---- header / RF readout (signature) ---- */
+  header{display:flex; flex-wrap:wrap; gap:18px; align-items:flex-end; justify-content:space-between; margin-bottom:22px}
+  .brand h1{font-size:20px; margin:0; letter-spacing:.5px; font-weight:650}
+  .brand .sub{color:var(--ink-dim); font-size:12.5px; margin-top:3px; font-family:var(--mono)}
+  .readout{
+    display:flex; gap:0; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:linear-gradient(180deg,#0c1416,#0a1112); box-shadow:inset 0 1px 0 #1c2a28;
+  }
+  .seg{padding:9px 16px; min-width:96px; border-right:1px solid var(--line)}
+  .seg:last-child{border-right:0}
+  .seg .k{font-size:9.5px; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-faint)}
+  .seg .v{font-family:var(--mono); font-size:15px; margin-top:2px; color:var(--ink-dim); transition:color .25s, text-shadow .25s}
+  .readout[data-g="A"] .v{color:var(--amber); text-shadow:0 0 14px rgba(242,165,65,.35)}
+  .readout[data-g="B"] .v{color:var(--cyan); text-shadow:0 0 14px rgba(70,214,196,.35)}
+
+  /* ---- layout ---- */
+  .grid{display:grid; grid-template-columns:1.35fr .95fr; gap:20px; align-items:start}
+  @media (max-width:880px){ .grid{grid-template-columns:1fr} }
+
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px}
+  .card + .card{margin-top:18px}
+  .card h2{font-size:11px; letter-spacing:1.8px; text-transform:uppercase; color:var(--ink-dim);
+    margin:0 0 14px; font-weight:600; display:flex; align-items:center; gap:8px}
+  .card h2::before{content:""; width:7px; height:7px; border-radius:2px; background:var(--amber); box-shadow:0 0 8px var(--amber)}
+
+  /* fields */
+  .field{margin-bottom:13px}
+  .field:last-child{margin-bottom:0}
+  .row2{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+  @media (max-width:520px){ .row2{grid-template-columns:1fr} }
+  label{display:block; font-size:11px; letter-spacing:.6px; color:var(--ink-dim); margin-bottom:5px; text-transform:uppercase}
+  input,select{
+    width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--ink);
+    border-radius:8px; padding:9px 11px; font-size:13.5px; font-family:var(--mono);
+  }
+  input:focus,select:focus{outline:2px solid var(--amber); outline-offset:0; border-color:transparent}
+  input[readonly]{color:var(--ink-dim); opacity:.85; cursor:default; background:#0b1213}
+  input[readonly]:focus{outline:none}
+  input.bad{outline:2px solid var(--danger); border-color:transparent}
+  input#locator{text-transform:uppercase}
+  .hint{font-size:11px; color:var(--ink-faint); margin-top:5px; font-family:var(--mono)}
+  .chanblock{border-left:2px solid var(--line); padding-left:13px; margin-bottom:13px}
+  .chanlabel{font-size:11px; letter-spacing:.6px; color:var(--ink-dim); text-transform:uppercase;
+    margin-bottom:9px; display:flex; align-items:center; gap:7px}
+  .chanlabel .cdot{width:7px; height:7px; border-radius:50%; background:var(--ink-faint)}
+  .chanlabel .cmeta{margin-left:auto; text-transform:none; letter-spacing:0; color:var(--ink-faint);
+    font-family:var(--mono); font-size:10.5px}
+  .check{display:flex; align-items:center; gap:9px; font-size:12.5px; color:var(--ink); cursor:pointer; margin-top:6px}
+  .check input{width:16px; height:16px; accent-color:var(--amber); flex:0 0 auto}
+
+  /* sensor bank */
+  .banktools{display:flex; justify-content:space-between; align-items:center; margin:-2px 0 12px}
+  .grouptag{font-family:var(--mono); font-size:11px; padding:3px 9px; border-radius:20px; border:1px solid var(--line); color:var(--ink-faint)}
+  .grouptag[data-on="A"]{color:var(--amber); border-color:var(--amber-dim)}
+  .grouptag[data-on="B"]{color:var(--cyan); border-color:var(--cyan-dim)}
+  .clear{background:none; border:1px solid var(--line); color:var(--ink-dim); font-size:11.5px;
+    padding:6px 10px; border-radius:7px; cursor:pointer; font-family:var(--mono)}
+  .clear:hover{border-color:var(--ink-dim); color:var(--ink)}
+
+  .grouphead{font-size:10.5px; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-faint);
+    margin:14px 0 8px; display:flex; gap:8px; align-items:center}
+  .grouphead .dot{width:8px;height:8px;border-radius:50%}
+  .grouphead.A .dot{background:var(--amber)} .grouphead.B .dot{background:var(--cyan)}
+  .grouphead .meta{font-family:var(--mono); color:var(--ink-faint); margin-left:auto; text-transform:none; letter-spacing:0}
+
+  .sensors{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+  @media (max-width:520px){ .sensors{grid-template-columns:1fr} }
+  .sensor{
+    position:relative; display:flex; gap:10px; align-items:flex-start;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:9px; padding:10px 11px; cursor:pointer;
+    transition:border-color .15s, background .15s;
+  }
+  .sensor:hover{border-color:var(--ink-faint)}
+  .sensor input{width:16px; height:16px; flex:0 0 auto; margin-top:2px; accent-color:var(--amber)}
+  .sensor .nm{font-size:13.5px; font-weight:600}
+  .sensor .ty{font-size:11px; color:var(--ink-dim); margin-top:1px}
+  .sensor .caps{margin-top:6px; display:flex; flex-wrap:wrap; gap:4px}
+  .capchip{font-family:var(--mono); font-size:9.5px; letter-spacing:.4px; color:var(--ink-faint);
+    border:1px solid var(--line); border-radius:5px; padding:1px 5px}
+  .sensor.sel[data-g="A"]{border-color:var(--amber-dim); background:#16201c}
+  .sensor.sel[data-g="A"] input{accent-color:var(--amber)}
+  .sensor.sel[data-g="B"]{border-color:var(--cyan-dim); background:#11201e}
+  .sensor.sel[data-g="B"] input{accent-color:var(--cyan)}
+  .sensor.locked{opacity:.4; cursor:not-allowed; filter:grayscale(.4)}
+  .sensor.locked .lockmsg{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-size:10.5px; color:var(--ink-dim); padding:6px; background:rgba(10,16,18,.55); border-radius:9px}
+
+  /* output panel */
+  .out{position:sticky; top:18px}
+  .out h2::before{background:var(--cyan); box-shadow:0 0 8px var(--cyan)}
+  .stat{display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px dashed var(--line); font-size:12.5px}
+  .stat:last-of-type{border-bottom:0}
+  .stat .lab{color:var(--ink-dim)}
+  .stat .val{font-family:var(--mono); color:var(--ink)}
+  .chips{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px}
+  .chip{font-family:var(--mono); font-size:10.5px; padding:3px 7px; border-radius:6px; border:1px solid var(--line); color:var(--ink-dim)}
+  .chip.scr{color:var(--amber); border-color:var(--amber-dim)}
+  .subhead{font-size:10px; letter-spacing:1.4px; text-transform:uppercase; color:var(--ink-faint); margin:16px 0 6px}
+
+  pre{background:#0a1011; border:1px solid var(--line); border-radius:9px; padding:13px;
+    font-family:var(--mono); font-size:12px; color:#cfe3e0; overflow:auto; margin:8px 0 0; max-height:300px; white-space:pre}
+  .actions{display:flex; gap:9px; margin-top:13px}
+  .btn{flex:1; border:none; border-radius:8px; padding:11px; font-size:13px; font-weight:650; cursor:pointer; font-family:var(--sans)}
+  .btn.primary{background:var(--amber); color:#1a1205}
+  .btn.primary:hover{filter:brightness(1.08)}
+  .btn.ghost{background:transparent; border:1px solid var(--line); color:var(--ink)}
+  .btn.ghost:hover{border-color:var(--ink-dim)}
+  .btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px}
+  .empty{color:var(--ink-faint); font-size:12.5px; font-style:italic}
+  .note{font-size:11px; color:var(--ink-faint); margin-top:14px; line-height:1.5; font-family:var(--mono)}
+  @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <h1>WeatherStation2Meshtastic</h1>
+      <div class="sub">configuratore di build · genera settings.ini · Heltec V3/V4 · SX1262</div>
+    </div>
+    <div class="readout" id="readout" data-g="">
+      <div class="seg"><div class="k">Gruppo</div><div class="v" id="rGroup">—</div></div>
+      <div class="seg"><div class="k">Bitrate</div><div class="v" id="rBitrate">—</div></div>
+      <div class="seg"><div class="k">Sync word</div><div class="v" id="rSync">0x2DD4</div></div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: controls -->
+    <div>
+      <div class="card">
+        <h2>Stazione</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="longName">Nome lungo (long_name)</label>
+            <input id="longName" value="weather station" maxlength="39" autocomplete="off">
+          </div>
+          <div class="field">
+            <label for="shortName">Nome breve (short_name)</label>
+            <input id="shortName" value="" maxlength="4" placeholder="auto" autocomplete="off">
+            <div class="hint">max 4 char · vuoto = ultimi 4 hex del NodeID</div>
+          </div>
+        </div>
+        <div class="field">
+          <label for="board">Scheda</label>
+          <select id="board">
+            <option value="heltec_wifi_lora_32_V3">Heltec WiFi LoRa 32 V3</option>
+            <option value="heltec_wifi_lora_32_V4">Heltec WiFi LoRa 32 V4</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Rete Meshtastic</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="preset">Preset modem</label>
+            <select id="preset">
+              <option>ShortTurbo</option><option>ShortFast</option><option>ShortSlow</option>
+              <option selected>MediumFast</option><option>MediumSlow</option>
+              <option>LongFast</option><option>LongModerate</option><option>LongSlow</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="freq">Frequenza (MHz)</label>
+            <input id="freq" value="869.525" autocomplete="off">
+          </div>
+        </div>
+        <div class="hint" style="margin:-4px 0 14px">Preset e frequenza sono condivisi da entrambi i canali.</div>
+
+        <div class="chanblock">
+          <div class="chanlabel"><span class="cdot"></span>Canale telemetria
+            <span class="cmeta">telemetria · NodeInfo · posizione</span></div>
+          <div class="row2">
+            <div class="field"><label for="telName">Nome <span style="text-transform:none;letter-spacing:0;color:var(--ink-faint)">(= preset)</span></label>
+              <input id="telName" value="MediumFast" readonly tabindex="-1"></div>
+            <div class="field"><label for="telPsk">PSK (channel_key)</label>
+              <input id="telPsk" value="AQ==" autocomplete="off"></div>
+          </div>
+        </div>
+
+        <div class="chanblock">
+          <div class="chanlabel"><span class="cdot"></span>Canale testo meteo
+            <span class="cmeta">bollettini · alert fulmini</span></div>
+          <div class="row2">
+            <div class="field"><label for="bulName">Nome (text_channel_name)</label>
+              <input id="bulName" value="METEOLAZIO" autocomplete="off"></div>
+            <div class="field"><label for="bulPsk">PSK (text_channel_key)</label>
+              <input id="bulPsk" value="WP6qHPCEFRZE8iK8SHQpZ1K9145G6jdu3YnP+dMSOg0=" autocomplete="off"></div>
+          </div>
+        </div>
+        <div class="hint">Vuoto su entrambe le righe testo = usa il canale principale. PSK locali a questo file.</div>
+      </div>
+
+      <div class="card">
+        <h2>Nodo / trasmissione</h2>
+        <div class="row2">
+          <div class="field">
+            <label for="txPower">Potenza TX (dBm)</label>
+            <input id="txPower" type="number" min="-9" max="22" value="22" autocomplete="off">
+            <div class="hint">max 22 su SX1262 · su V4 il PA amplifica: occhio ai limiti di legge</div>
+          </div>
+          <div class="field">
+            <label for="hopLimit">Hop limit</label>
+            <input id="hopLimit" type="number" min="0" max="7" value="3" autocomplete="off">
+            <div class="hint">0–7 · tipico Meshtastic = 3</div>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field">
+            <label for="sendInterval">Telemetria ogni (min)</label>
+            <input id="sendInterval" type="number" min="1" value="10" autocomplete="off">
+            <div class="hint">media delle letture dal precedente invio</div>
+          </div>
+          <div class="field">
+            <label for="textInterval">Testo meteo ogni (min)</label>
+            <input id="textInterval" type="number" min="0" value="120" autocomplete="off">
+            <div class="hint">0 = disabilitato</div>
+          </div>
+        </div>
+        <label class="check"><input id="okMqtt" type="checkbox" checked> Consenti inoltro MQTT (ok_to_mqtt)</label>
+      </div>
+
+      <div class="card">
+        <h2>Posizione</h2>
+        <div class="field">
+          <label for="locator">Locatore Maidenhead (WWL)</label>
+          <input id="locator" placeholder="es. JN61fv" autocomplete="off" spellcheck="false">
+          <div class="hint">imposta lat/lon dal centro del quadrato · si sincronizza con le coordinate</div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="lat">Latitudine</label>
+            <input id="lat" type="number" step="0.0001" value="0" autocomplete="off"></div>
+          <div class="field"><label for="lon">Longitudine</label>
+            <input id="lon" type="number" step="0.0001" value="0" autocomplete="off"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="alt">Quota (m)</label>
+            <input id="alt" type="number" value="0" autocomplete="off"></div>
+          <div class="field"><label for="tz">Timezone</label>
+            <input id="tz" value="auto" autocomplete="off">
+            <div class="hint">auto = derivata dalle coordinate</div>
+          </div>
+        </div>
+        <div class="hint">latitudine e longitudine = 0 → posizione NON trasmessa.</div>
+      </div>
+
+      <div class="card">
+        <h2>Sensori</h2>
+        <div class="banktools">
+          <span class="grouptag" id="grouptag" data-on="">nessun gruppo attivo</span>
+          <button class="clear" id="clearBtn" type="button">Svuota selezione</button>
+        </div>
+        <div id="bank"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: output -->
+    <div class="card out">
+      <h2>Build risultante</h2>
+      <div class="stat"><span class="lab">Sensori selezionati</span><span class="val" id="oCount">0</span></div>
+      <div class="stat"><span class="lab">Config radio</span><span class="val" id="oRadio">—</span></div>
+
+      <div class="subhead">Schermate incluse</div>
+      <div class="chips" id="oScreens"><span class="empty">nessuna</span></div>
+
+      <div class="subhead">Sorgenti compilati</div>
+      <div class="chips" id="oSources"><span class="empty">solo core</span></div>
+
+      <div class="subhead">Librerie extra</div>
+      <div class="chips" id="oLibs"><span class="chip">solo dipendenze core</span></div>
+
+      <div class="subhead">settings.ini</div>
+      <pre id="ini"></pre>
+      <div class="actions">
+        <button class="btn primary" id="dlBtn" type="button">Scarica settings.ini</button>
+        <button class="btn ghost" id="cpBtn" type="button">Copia</button>
+      </div>
+
+      <p class="note">Fonte di verità = <b>[sensors].enabled</b>. Lo script di pre-build
+      deriva radio e schermate dal catalogo. Il catalogo qui sotto rispecchia
+      <b>sensors_catalog.json</b>: modificalo lì per aggiungere sensori.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Catalogo: caricato da sensors_catalog.json (fonte di verità unica).
+   Aperta come file:// la fetch fallisce -> si usa il FALLBACK qui sotto.
+   Servila (es. `python -m http.server` in tools/configurator/) per leggere il JSON. ===== */
+const FALLBACK_CATALOG = {
+  groups: {
+    A: { label:"Fine Offset / Ecowitt + LaCrosse IT+/TFA", bitrate_bps:17241, syncword:"0x2DD4" },
+    B: { label:"Bresser", bitrate_bps:8064, syncword:"0x2DD4" }
+  },
+  capabilities: {
+    TEMP:{screen:"SCREEN_TEMPHUM"}, HUM:{screen:"SCREEN_TEMPHUM"}, PRESSURE:{screen:"SCREEN_PRESSURE"},
+    RAIN:{screen:"SCREEN_RAIN"}, WIND:{screen:"SCREEN_WIND"}, UV:{screen:"SCREEN_UV"},
+    LIGHTNING:{screen:"SCREEN_LIGHTNING"}, PM:{screen:"SCREEN_AQI"}, CO2:{screen:"SCREEN_AQI"},
+    SOIL:{screen:"SCREEN_SOIL"}, LEAK:{screen:"SCREEN_LEAK"}
+  },
+  sensors: [
+    {id:"WH32", group:"A", label:"Fine Offset WH32 / WH25 / WH65B", type:"Temp / Umidità / Pressione", caps:["TEMP","HUM","PRESSURE"], sources:["sensors/fineoffset/wh32.cpp"], libs:[]},
+    {id:"WH31E",group:"A", label:"Ambient WH31E + WS68",            type:"Thermo-hygro / Stazione",     caps:["TEMP","HUM"],            sources:["sensors/fineoffset/wh31e.cpp"], libs:[]},
+    {id:"WH40", group:"A", label:"Ecowitt WH40",                    type:"Pluviometro",                 caps:["RAIN"],                  sources:["sensors/fineoffset/wh40.cpp"], libs:[]},
+    {id:"WH57", group:"A", label:"Ecowitt WH57 / WH31L",            type:"Fulmini",                     caps:["LIGHTNING"],             sources:["sensors/fineoffset/wh57.cpp"], libs:[]},
+    {id:"WH51", group:"A", label:"Ecowitt WH51 / WN31 / SM23",      type:"Umidità suolo",               caps:["SOIL"],                  sources:["sensors/fineoffset/wh51.cpp"], libs:[]},
+    {id:"WH45", group:"A", label:"Ecowitt WH45",                    type:"Qualità aria (PM/CO2)",       caps:["PM","CO2","TEMP","HUM"], sources:["sensors/fineoffset/wh45.cpp"], libs:[]},
+    {id:"WS80", group:"A", label:"Fine Offset WS80",                type:"Stazione (vento ultrasonico)",caps:["TEMP","HUM","WIND","UV"],sources:["sensors/fineoffset/ws80.cpp"], libs:[]},
+    {id:"WS90", group:"A", label:"Fine Offset WS90 (Wittboy)",      type:"Stazione 7-in-1",             caps:["TEMP","HUM","WIND","UV","RAIN"], sources:["sensors/fineoffset/ws90.cpp"], libs:[]},
+    {id:"TX35", group:"A", label:"LaCrosse TX35 / TX29 / TFA",      type:"Temp / Umidità",              caps:["TEMP","HUM"],            sources:["sensors/lacrosse/tx35.cpp"], libs:[]},
+    {id:"BRESSER_5IN1",     group:"B", label:"Bresser 5-in-1",            type:"Stazione",            caps:["TEMP","HUM","WIND","RAIN"], sources:["sensors/bresser/bresser_5in1.cpp"], libs:[]},
+    {id:"BRESSER_6IN1",     group:"B", label:"Bresser 6-in-1 / 7-in-1",  type:"Stazione / Suolo / Vento", caps:["TEMP","HUM","WIND","RAIN","UV","SOIL"], sources:["sensors/bresser/bresser_6in1.cpp"], libs:[]},
+    {id:"BRESSER_7IN1_AQ",  group:"B", label:"Bresser 7-in-1 Air Quality",type:"Qualità aria",       caps:["PM","CO2"],          sources:["sensors/bresser/bresser_7in1.cpp"], libs:[]},
+    {id:"BRESSER_LIGHTNING",group:"B", label:"Bresser Lightning",        type:"Fulmini",             caps:["LIGHTNING"],         sources:["sensors/bresser/bresser_lightning.cpp"], libs:[]},
+    {id:"BRESSER_LEAKAGE",  group:"B", label:"Bresser Leakage",          type:"Perdita acqua",       caps:["LEAK"],              sources:["sensors/bresser/bresser_leakage.cpp"], libs:[]}
+  ]
+};
+
+let GROUPS = {}, CAP_SCREEN = {}, SENSORS = [];
+function applyCatalog(cat){
+  GROUPS = {};
+  for(const [g,info] of Object.entries(cat.groups))
+    GROUPS[g] = { label:info.label, bitrate:info.bitrate_bps, sync:info.syncword };
+  CAP_SCREEN = {};
+  for(const [cap,info] of Object.entries(cat.capabilities)) CAP_SCREEN[cap] = info.screen;
+  SENSORS = cat.sensors;
+}
+async function loadCatalog(){
+  try{
+    const res = await fetch("sensors_catalog.json", {cache:"no-store"});
+    if(res.ok){ applyCatalog(await res.json()); return "json"; }
+  }catch(e){ /* file:// o JSON assente -> fallback */ }
+  applyCatalog(FALLBACK_CATALOG); return "fallback";
+}
+
+/* ===== Stato ===== */
+const selected = new Set();
+const $ = id => document.getElementById(id);
+
+/* ===== Maidenhead (WWL) <-> lat/lon ===== */
+function locatorToLatLon(loc){
+  loc = (loc||"").trim().toUpperCase();
+  if(!/^[A-R]{2}[0-9]{2}([A-X]{2}([0-9]{2})?)?$/.test(loc)) return null;
+  let lon = (loc.charCodeAt(0)-65)*20 - 180;
+  let lat = (loc.charCodeAt(1)-65)*10 - 90;
+  lon += (loc.charCodeAt(2)-48)*2;
+  lat += (loc.charCodeAt(3)-48)*1;
+  if(loc.length>=6){
+    lon += (loc.charCodeAt(4)-65)*(2/24);
+    lat += (loc.charCodeAt(5)-65)*(1/24);
+    if(loc.length>=8){
+      lon += (loc.charCodeAt(6)-48)*(2/240);
+      lat += (loc.charCodeAt(7)-48)*(1/240);
+      lon += (2/240)/2; lat += (1/240)/2;          // centro extended square
+    } else { lon += (2/24)/2; lat += (1/24)/2; }    // centro subsquare
+  } else { lon += 1; lat += 0.5; }                  // centro square
+  return { lat:+lat.toFixed(4), lon:+lon.toFixed(4) };
+}
+function latLonToLocator(lat, lon){
+  if(!isFinite(lat)||!isFinite(lon)) return "";
+  lat = Math.max(-89.999, Math.min(89.999, lat));
+  lon = Math.max(-179.999, Math.min(179.999, lon));
+  let aLon = lon + 180, aLat = lat + 90;
+  const f1 = Math.floor(aLon/20), f2 = Math.floor(aLat/10); aLon -= f1*20; aLat -= f2*10;
+  const s1 = Math.floor(aLon/2),  s2 = Math.floor(aLat/1);  aLon -= s1*2;  aLat -= s2*1;
+  const u1 = Math.floor(aLon/(2/24)), u2 = Math.floor(aLat/(1/24));
+  return String.fromCharCode(65+f1) + String.fromCharCode(65+f2)
+       + s1 + "" + s2
+       + String.fromCharCode(97+u1) + String.fromCharCode(97+u2);
+}
+
+function activeGroup(){
+  for(const id of selected){ const s = SENSORS.find(x=>x.id===id); if(s) return s.group; }
+  return null;
+}
+
+/* ===== Render bank ===== */
+function renderBank(){
+  const bank = $("bank");
+  bank.innerHTML = "";
+  for(const g of ["A","B"]){
+    const head = document.createElement("div");
+    head.className = "grouphead "+g;
+    head.innerHTML = `<span class="dot"></span> Gruppo ${g} · ${GROUPS[g].label}
+      <span class="meta">${GROUPS[g].bitrate.toLocaleString()} bps · sync ${GROUPS[g].sync}</span>`;
+    bank.appendChild(head);
+
+    const wrap = document.createElement("div");
+    wrap.className = "sensors";
+    SENSORS.filter(s=>s.group===g).forEach(s=>{
+      const lab = document.createElement("label");
+      lab.className = "sensor";
+      lab.dataset.g = g;
+      lab.dataset.id = s.id;
+      lab.innerHTML = `
+        <input type="checkbox" ${selected.has(s.id)?"checked":""}>
+        <span>
+          <span class="nm">${s.label}</span>
+          <span class="ty">${s.type}</span>
+          <span class="caps">${s.caps.map(c=>`<span class="capchip">${c}</span>`).join("")}</span>
+        </span>
+        <span class="lockmsg"></span>`;
+      lab.querySelector("input").addEventListener("change", e=>{
+        if(lab.classList.contains("locked")){ e.preventDefault(); e.target.checked=false; return; }
+        if(e.target.checked) selected.add(s.id); else selected.delete(s.id);
+        update();
+      });
+      wrap.appendChild(lab);
+    });
+    bank.appendChild(wrap);
+  }
+  applyLocks();
+}
+
+function applyLocks(){
+  const ag = activeGroup();
+  document.querySelectorAll(".sensor").forEach(el=>{
+    const g = el.dataset.g, sel = selected.has(el.dataset.id);
+    el.classList.toggle("sel", sel);
+    const locked = ag && g!==ag;
+    el.classList.toggle("locked", !!locked);
+    el.querySelector(".lockmsg").textContent = locked
+      ? `Bloccato — il Gruppo ${g} non è ricevibile insieme al Gruppo ${ag} su un solo SX1262`
+      : "";
+    el.querySelector("input").disabled = !!locked;
+  });
+  const tag = $("grouptag");
+  tag.dataset.on = ag || "";
+  tag.textContent = ag ? `Gruppo ${ag} attivo · ${GROUPS[ag].bitrate.toLocaleString()} bps` : "nessun gruppo attivo";
+}
+
+/* ===== Derivazioni ===== */
+function derive(){
+  const chosen = SENSORS.filter(s=>selected.has(s.id));
+  const ag = activeGroup();
+  const caps = new Set(); const screens = new Set(); const src = new Set(); const libs = new Set();
+  chosen.forEach(s=>{ s.caps.forEach(c=>{caps.add(c); if(CAP_SCREEN[c]) screens.add(CAP_SCREEN[c]);});
+                      s.sources.forEach(f=>src.add(f)); s.libs.forEach(l=>libs.add(l)); });
+  return {chosen, ag, caps:[...caps], screens:[...screens], src:[...src], libs:[...libs]};
+}
+
+function genIni(d){
+  const L = [];
+  L.push("; settings.ini - generato dal Configurator (build-time)");
+  L.push("; Sezione [meshtastic] allineata a iz0kew/EcoWittStation2Meshtastic.");
+  L.push("; Fonte di verita' sensori: [sensors].enabled (lo script deriva radio e schermate).");
+  const envboard = $("board").value.includes("V4") ? "heltec_v4" : "heltec_v3";
+  L.push(`; build: pio run -e group${d.ag||"A"}_${envboard} -t upload`);
+  L.push("");
+  L.push("[meshtastic]");
+  L.push("enabled           = true");
+  L.push(`frequency_mhz     = ${$("freq").value.trim()}`);
+  L.push(`preset            = ${$("preset").value}`);
+  L.push(`send_interval_min = ${$("sendInterval").value}`);
+  L.push(`text_interval_min = ${$("textInterval").value}`);
+  L.push(`short_name        = ${$("shortName").value.trim()}`);
+  L.push(`long_name         = ${$("longName").value.trim()}`);
+  L.push(`tx_power_dbm      = ${$("txPower").value}`);
+  L.push(`hop_limit         = ${$("hopLimit").value}`);
+  L.push(`ok_to_mqtt        = ${$("okMqtt").checked ? "true" : "false"}`);
+  L.push(`channel_name      =                  ; vuoto = usa il preset (${$("preset").value})`);
+  L.push(`channel_key       = ${$("telPsk").value.trim()}`);
+  L.push(`text_channel_name = ${$("bulName").value.trim()}`);
+  L.push(`text_channel_key  = ${$("bulPsk").value.trim()}`);
+  L.push(`latitude          = ${$("lat").value.trim()}`);
+  L.push(`longitude         = ${$("lon").value.trim()}`);
+  L.push(`altitude_m        = ${$("alt").value.trim()}`);
+  L.push(`timezone          = ${$("tz").value.trim()}`);
+  L.push("");
+  L.push("[sensors]");
+  if(d.ag){
+    L.push(`; risolti nel Gruppo ${d.ag} -> ${GROUPS[d.ag].bitrate} bps, sync ${GROUPS[d.ag].sync} (derivato)`);
+  }
+  L.push(`enabled = ${d.chosen.map(s=>s.id).join(", ") || ""}`);
+  return L.join("\n");
+}
+
+/* ===== Update UI ===== */
+function update(){
+  $("telName").value = $("preset").value;   // canale telemetria = preset modem
+  // sincronizza WWL dalle coordinate (a meno che l'utente non stia digitando il locatore)
+  if(document.activeElement !== $("locator")){
+    const la = parseFloat($("lat").value), lo = parseFloat($("lon").value);
+    if(isFinite(la) && isFinite(lo) && (la!==0 || lo!==0)){
+      $("locator").value = latLonToLocator(la, lo);
+      $("locator").classList.remove("bad");
+    }
+  }
+  applyLocks();
+  const d = derive();
+
+  // readout
+  const r = $("readout"); r.dataset.g = d.ag || "";
+  $("rGroup").textContent   = d.ag || "—";
+  $("rBitrate").textContent = d.ag ? GROUPS[d.ag].bitrate.toLocaleString()+" bps" : "—";
+  $("rSync").textContent    = d.ag ? GROUPS[d.ag].sync : "0x2DD4";
+
+  // stats
+  $("oCount").textContent = d.chosen.length;
+  $("oRadio").textContent = d.ag ? `Gruppo ${d.ag} · ${GROUPS[d.ag].bitrate.toLocaleString()} bps` : "—";
+
+  // screens
+  $("oScreens").innerHTML = d.screens.length
+    ? d.screens.map(s=>`<span class="chip scr">${s}</span>`).join("")
+    : `<span class="empty">nessuna</span>`;
+  // sources
+  $("oSources").innerHTML = d.src.length
+    ? d.src.map(f=>`<span class="chip">${f.split("/").pop()}</span>`).join("")
+    : `<span class="empty">solo core</span>`;
+  // libs
+  $("oLibs").innerHTML = d.libs.length
+    ? d.libs.map(l=>`<span class="chip">${l}</span>`).join("")
+    : `<span class="chip">solo dipendenze core</span>`;
+
+  // ini
+  $("ini").textContent = genIni(d);
+}
+
+/* ===== Actions ===== */
+$("clearBtn").addEventListener("click", ()=>{ selected.clear(); renderBank(); update(); });
+$("locator").addEventListener("input", ()=>{
+  const r = locatorToLatLon($("locator").value);
+  if(r){ $("lat").value = r.lat; $("lon").value = r.lon; $("locator").classList.remove("bad"); }
+  else if($("locator").value.trim() !== ""){ $("locator").classList.add("bad"); }
+  update();
+});
+["longName","shortName","board","preset","freq","telPsk","bulName","bulPsk","txPower","hopLimit","sendInterval","textInterval","lat","lon","alt","tz"].forEach(id=> $(id).addEventListener("input", update));
+$("okMqtt").addEventListener("change", update);
+
+$("dlBtn").addEventListener("click", ()=>{
+  const blob = new Blob([$("ini").textContent], {type:"text/plain"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "settings.ini"; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+});
+$("cpBtn").addEventListener("click", async ()=>{
+  const txt = $("ini").textContent;
+  try{ await navigator.clipboard.writeText(txt); flash($("cpBtn"),"Copiato"); }
+  catch(e){ const ta=document.createElement("textarea"); ta.value=txt; document.body.appendChild(ta);
+            ta.select(); document.execCommand("copy"); ta.remove(); flash($("cpBtn"),"Copiato"); }
+});
+function flash(btn,txt){ const o=btn.textContent; btn.textContent=txt; setTimeout(()=>btn.textContent=o,1200); }
+
+/* ===== Init (carica catalogo, poi preseleziona i sensori attuali) ===== */
+(async function(){
+  await loadCatalog();
+  ["WH32","WH40","WH57"].forEach(id=>selected.add(id));
+  renderBank();
+  update();
+})();
+</script>
+</body>
+</html>
