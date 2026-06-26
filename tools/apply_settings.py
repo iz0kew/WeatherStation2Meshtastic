@@ -333,7 +333,7 @@ def main():
         sample_min = max(1, sample_min)
 
     # --- Costruisci user_config.h riga per riga ---
-    FW_VERSION = "1.0.0"
+    FW_VERSION = "1.1.0"
 
     L = []
     def w(s=""):

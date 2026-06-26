@@ -64,14 +64,19 @@ environment per gruppo); lo script di pre‑build **rifiuta** una selezione mist
 
 | id | Modello | Misure |
 |----|---------|--------|
-| `WH32`  | Fine Offset WH32 / WH25 / WH65B | temp / umidità / pressione |
+| `WH32`  | Fine Offset WH32 / WH25 / WH32B | temp / umidità / pressione |
 | `WH31E` | Ambient WH31E / WH31B | temp / umidità |
 | `WH40`  | Ecowitt WH40 | pioggia |
 | `WH57`  | Ecowitt WH57 / WH31L | fulmini |
 | `WH51`  | Ecowitt WH51 / WN31 / SM23 | umidità suolo |
 | `WH45`  | Ecowitt WH45 | PM2.5 / PM10 / CO₂ / temp / umidità |
+| `WH46`  | Ecowitt WH46 | PM1/2.5/4/10 / CO₂ / temp / umidità |
+| `WN34`  | Fine Offset WN34S/L/D | sonda temperatura (suolo/acqua) |
+| `WS68`  | Ecowitt WS68 | vento / luce / UV |
 | `WS80`  | Fine Offset WS80 | temp / umidità / vento / UV / luce |
+| `WS85`  | Fine Offset WS85 | vento / pioggia |
 | `WS90`  | Fine Offset WS90 (Wittboy) | come WS80 + pioggia |
+| `WH65B` | Fine Offset WH24 / WH65B / WS69 | stazione all‑in‑one (temp / umid / vento / pioggia / UV) |
 | `TX35`  | LaCrosse TX35 / TX29 / TFA 30.3155/30.3159 | temp / umidità |
 
 **Gruppo B** (`groupB_*`)
@@ -79,7 +84,8 @@ environment per gruppo); lo script di pre‑build **rifiuta** una selezione mist
 | id | Modello | Misure |
 |----|---------|--------|
 | `BRESSER_5IN1`      | Bresser 5‑in‑1 | temp / umidità / vento / pioggia |
-| `BRESSER_6IN1`      | Bresser 6‑in‑1 / 7‑in‑1 meteo | + UV / suolo |
+| `BRESSER_6IN1`      | Bresser 6‑in‑1 (+ new 5‑in‑1 / 3‑in‑1 wind / soil) | temp / umidità / vento / pioggia / UV / suolo |
+| `BRESSER_7IN1`      | Bresser 7‑in‑1 meteo | temp / umidità / vento / pioggia / UV |
 | `BRESSER_7IN1_AQ`   | Bresser 7‑in‑1 Air Quality | PM2.5 / PM10 / CO₂ |
 | `BRESSER_LIGHTNING` | Bresser Lightning | fulmini |
 | `BRESSER_LEAKAGE`   | Bresser Leakage | perdita acqua |
@@ -205,7 +211,37 @@ group); the pre‑build script **rejects** a mixed selection.
 | **A** | ~17.241 kbps | Fine Offset / Ecowitt + LaCrosse IT+/TFA |
 | **B** | ~8.06 kbps | Bresser |
 
-See the sensor tables in the Italian section above.
+### Supported sensors
+
+**Group A** (`groupA_*`)
+
+| id | Model | Measures |
+|----|-------|----------|
+| `WH32`  | Fine Offset WH32 / WH25 / WH32B | temp / humidity / pressure |
+| `WH31E` | Ambient WH31E / WH31B | temp / humidity |
+| `WH40`  | Ecowitt WH40 | rain |
+| `WH57`  | Ecowitt WH57 / WH31L | lightning |
+| `WH51`  | Ecowitt WH51 / WN31 / SM23 | soil moisture |
+| `WH45`  | Ecowitt WH45 | PM2.5 / PM10 / CO₂ / temp / humidity |
+| `WH46`  | Ecowitt WH46 | PM1/2.5/4/10 / CO₂ / temp / humidity |
+| `WN34`  | Fine Offset WN34S/L/D | temperature probe (soil/water) |
+| `WS68`  | Ecowitt WS68 | wind / light / UV |
+| `WS80`  | Fine Offset WS80 | temp / humidity / wind / UV / light |
+| `WS85`  | Fine Offset WS85 | wind / rain |
+| `WS90`  | Fine Offset WS90 (Wittboy) | like WS80 + rain |
+| `WH65B` | Fine Offset WH24 / WH65B / WS69 | all‑in‑one station (temp / humidity / wind / rain / UV) |
+| `TX35`  | LaCrosse TX35 / TX29 / TFA 30.3155/30.3159 | temp / humidity |
+
+**Group B** (`groupB_*`)
+
+| id | Model | Measures |
+|----|-------|----------|
+| `BRESSER_5IN1`      | Bresser 5‑in‑1 | temp / humidity / wind / rain |
+| `BRESSER_6IN1`      | Bresser 6‑in‑1 (+ new 5‑in‑1 / 3‑in‑1 wind / soil) | temp / humidity / wind / rain / UV / soil |
+| `BRESSER_7IN1`      | Bresser 7‑in‑1 weather | temp / humidity / wind / rain / UV |
+| `BRESSER_7IN1_AQ`   | Bresser 7‑in‑1 Air Quality | PM2.5 / PM10 / CO₂ |
+| `BRESSER_LIGHTNING` | Bresser Lightning | lightning |
+| `BRESSER_LEAKAGE`   | Bresser Leakage | water leak |
 
 ### Configuration & build
 
