@@ -34,15 +34,21 @@ V3 / V4** (ESP32‑S3 + Semtech **SX1262**).*
   first sample") e finestra valida derivata dalla **data di build**.
 - **Bollettini automatici**: 3 bollettini astronomici al giorno (alba+1h,
   mezzogiorno, tramonto−1h) sul canale principale + bollettino a intervallo fisso
-  sul canale testo, con emoji.
+  sul canale testo, con emoji e **orario locale di invio** (🕒).
 - **Avvisi fulmini** sul canale testo con soglia configurabile.
+- **Invio manuale dei bollettini**: pressione **prolungata** del tasto PRG →
+  menu a finestra per scegliere il canale (Ch0/Ch1) → conferma invio; ogni
+  sottomenu ha la voce "Indietro" e si chiude da solo dopo 10 s di inattività.
 - **Effemeridi offline**: alba/tramonto, fase lunare (crescente/calante).
 - **Display OLED** con schermate a rotazione guidate dalle capability:
   panoramica, temp/umidità, pressione, pioggia, vento, UV/luce, fulmini, qualità
   aria, suolo, perdita acqua, **grafici 24h** (temperatura, umidità, pioggia,
   fulmini), orario+data, astro, stato Meshtastic (short name + countdown al
-  prossimo invio). Ogni schermata mostra **modello e ID** del sensore ricevuto
-  (utile a distinguere la propria stazione da quella di un vicino).
+  prossimo invio + **batteria %/alimentazione USB**). Ogni schermata mostra
+  **modello e ID** del sensore ricevuto (utile a distinguere la propria stazione
+  da quella di un vicino).
+- **Splash screen all'avvio** (5 s) con logo, nome del progetto e versione
+  firmware.
 - **Configuratore web** build‑time (`tools/configurator/index.html`) per generare
   l'intero `settings.ini`.
 
@@ -143,8 +149,10 @@ pio run -e groupB_heltec_v4 -t upload     # Gruppo B, Heltec V4
    (PRG)**, premi e rilascia **RST**, poi rilascia **BOOT**; rilancia l'upload.
    La V3/V4 di solito entra in download mode da sola, quindi serve di rado.
 
-All'avvio la scheda apre una finestra di ~5 minuti per sincronizzare l'orario
-dalla rete Meshtastic; premi **PRG** per scorrere le schermate.
+All'avvio la scheda mostra la splash screen (5 s) e apre una finestra di ~5
+minuti per sincronizzare l'orario dalla rete Meshtastic; premi **PRG** per
+scorrere le schermate. A sincronizzazione conclusa, una **pressione prolungata**
+di PRG apre il menu di invio manuale (breve = scorri voce, lunga = seleziona).
 
 ### Matrice hardware
 
@@ -187,15 +195,19 @@ dalla rete Meshtastic; premi **PRG** per scorrere le schermate.
   **build date**.
 - **Automatic bulletins**: 3 daily astronomy bulletins (sunrise+1h, noon,
   sunset−1h) on the primary channel + a fixed‑interval bulletin on the text
-  channel, with emoji.
+  channel, with emoji and the **local send time** (🕒).
 - **Lightning alerts** on the text channel with a configurable threshold.
+- **Manual bulletin send**: **long‑press** the PRG button → windowed menu to
+  pick the channel (Ch0/Ch1) → confirm; every submenu has a "Back" entry and
+  auto‑closes after 10 s of inactivity.
 - **Offline ephemeris**: sunrise/sunset, moon phase (waxing/waning).
 - **OLED display** with capability‑driven rotating screens: overview,
   temp/humidity, pressure, rain, wind, UV/light, lightning, air quality, soil,
   leak, **24h graphs** (temperature, humidity, rain, lightning), time+date,
-  astro, Meshtastic status (short name + countdown to next send). Each data screen
-  shows the **model and ID** of the received sensor (handy to tell your own
-  station apart from a neighbour's).
+  astro, Meshtastic status (short name + countdown to next send + **battery
+  %/USB power**). Each data screen shows the **model and ID** of the received
+  sensor (handy to tell your own station apart from a neighbour's).
+- **Boot splash screen** (5 s) with logo, project name and firmware version.
 - **Build‑time web configurator** (`tools/configurator/index.html`) to generate
   the whole `settings.ini`.
 
@@ -276,8 +288,10 @@ pio run -e groupA_heltec_v4 -t upload    # or _v3 / groupB_*
    **BOOT**, then re‑run the upload. The V3/V4 usually enters download mode on its
    own, so this is rarely needed.
 
-At boot the board opens a ~5‑minute window to sync time from the Meshtastic
-network; press **PRG** to cycle through the screens.
+At boot the board shows the splash screen (5 s), then opens a ~5‑minute window
+to sync time from the Meshtastic network; press **PRG** to cycle through the
+screens. Once time‑sync is done, **long‑press** PRG to open the manual send
+menu (short press = next item, long press = select).
 
 ---
 
@@ -297,9 +311,9 @@ src/
   config/generated_config.h # generato (RADIO_*, ENABLE_*, SCREEN_*)
   radio/                    # gestore unico SX1262 a 3 modalità
   sensors/                  # sensor_types.h, registry, sensor_util.h, fineoffset/ lacrosse/ bresser/
-  display/                  # display.h, ui.{h,cpp}, screens/ (incl. grafici 24h)
+  display/                  # display.h, ui.{h,cpp}, splash_logo.h, screens/ (incl. grafici 24h)
   mesh/                     # meshtastic_pack.{h,cpp}
-  timesync.{h,cpp}  astro.{h,cpp}  history.h
+  timesync.{h,cpp}  astro.{h,cpp}  history.h  battery.{h,cpp}
 ```
 
 ## Licenza / License

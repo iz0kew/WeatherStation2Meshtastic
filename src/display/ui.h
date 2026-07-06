@@ -71,6 +71,11 @@ int  uiGraphCount(HistGetFn get);
 void uiDrawGraph(const char *title, const char *tag, HistGetFn get, const char *valFmt);
 
 void uiInit();
+void uiSplash();          // schermata di avvio: logo + nome progetto + release
 void uiSubmit(const SensorReading &r);
 void uiNextScreen();      // passa alla schermata successiva disponibile
 void uiDraw();            // disegna la schermata corrente
+
+// Tasto PRG: breve = schermata successiva / scorri voce menu,
+// lungo = apri menu invio manuale / seleziona voce evidenziata.
+void uiButton(bool longPress);

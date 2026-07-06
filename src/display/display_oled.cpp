@@ -27,6 +27,10 @@ void gfxTextBig(int x, int y, const char *s) {
   u8g2.setFont(u8g2_font_logisoso22_tf);
   u8g2.drawUTF8(x, y, s);
 }
+void gfxTextSmall(int x, int y, const char *s) {
+  u8g2.setFont(u8g2_font_5x8_tf);
+  u8g2.drawUTF8(x, y, s);
+}
 int gfxTextWidth(const char *s) {
   u8g2.setFont(u8g2_font_6x12_tf);
   return u8g2.getUTF8Width(s);
@@ -35,8 +39,19 @@ int gfxTextWidthBig(const char *s) {
   u8g2.setFont(u8g2_font_logisoso22_tf);
   return u8g2.getUTF8Width(s);
 }
+int gfxTextWidthSmall(const char *s) {
+  u8g2.setFont(u8g2_font_5x8_tf);
+  return u8g2.getUTF8Width(s);
+}
 void gfxLine(int x0, int y0, int x1, int y1) { u8g2.drawLine(x0, y0, x1, y1); }
 void gfxFillRect(int x, int y, int w, int h) { if (w > 0 && h > 0) u8g2.drawBox(x, y, w, h); }
 void gfxPixel(int x, int y) { u8g2.drawPixel(x, y); }
+void gfxXBM(int x, int y, int w, int h, const uint8_t *bits) { u8g2.drawXBM(x, y, w, h, bits); }
+void gfxClearRect(int x, int y, int w, int h) {
+  u8g2.setDrawColor(0);
+  u8g2.drawBox(x, y, w, h);
+  u8g2.setDrawColor(1);
+}
+void gfxFrame(int x, int y, int w, int h) { u8g2.drawFrame(x, y, w, h); }
 
 #endif // HAS_OLED

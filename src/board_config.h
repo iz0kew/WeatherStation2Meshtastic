@@ -34,6 +34,14 @@
 
   #define PIN_BUTTON     0   // tasto PRG
 
+  // Lettura batteria: partitore 390k/100k su VBAT, abilitato da ADC_Ctrl.
+  // Sulle revisioni V3.2 l'ADC_Ctrl e' attivo ALTO: se con batteria collegata
+  // la lettura resta ~0V, cambiare VBAT_CTRL_ON in HIGH.
+  #define PIN_VBAT_READ  1    // GPIO1 = ADC1_CH0
+  #define PIN_ADC_CTRL   37
+  #define VBAT_CTRL_ON   LOW
+  #define VBAT_MULTIPLIER 4.9f   // (390k+100k)/100k
+
 #else
   #error "Definisci BOARD_HELTEC_V3 o BOARD_HELTEC_V4 nei build_flags"
 #endif

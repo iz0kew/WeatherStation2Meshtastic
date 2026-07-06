@@ -84,9 +84,14 @@ static void checkLightningAlert(uint32_t now) {
   if (g_ui.strikeTotal <= lastAlertStrikes) return;
 
   lastAlertMs = now; lastAlertStrikes = g_ui.strikeTotal;
-  char msg[96];
-  snprintf(msg, sizeof(msg), "⚡ " MESH_LONG_NAME "\n%lu fulmini  ~%u km",
-           (unsigned long)delta, (unsigned)g_ui.lastDistKm);
+  char msg[112];
+  size_t mn = snprintf(msg, sizeof(msg), "⚡ " MESH_LONG_NAME "\n%lu fulmini  ~%u km",
+                       (unsigned long)delta, (unsigned)g_ui.lastDistKm);
+  if (timeSyncValid() && mn < sizeof(msg)) {
+    time_t tt = time(nullptr);
+    struct tm lt; localtime_r(&tt, &lt);
+    snprintf(msg + mn, sizeof(msg) - mn, "\n🕒 %02d:%02d", lt.tm_hour, lt.tm_min);
+  }
   meshSendText(msg);   // canale testo (default)
   Serial.printf("[mesh] allarme fulmini score=%.2f delta=%lu @%ukm\n",
                 (double)score, (unsigned long)delta, (unsigned)g_ui.lastDistKm);
@@ -95,13 +100,22 @@ static void checkLightningAlert(uint32_t now) {
 
 // ---------------------------------------------------------------------------
 // Bollettino meteo testuale composto dai dati recenti in g_ui + astro.
+// Non-static: richiamata anche dal menu di invio manuale (display/ui.cpp).
+// Ritorna true se il messaggio e' stato effettivamente inviato.
 // ---------------------------------------------------------------------------
-static void meshSendWeatherText(uint8_t chanIdx) {
+bool meshSendWeatherText(uint8_t chanIdx) {
   uint32_t now = millis();
   char msg[240];
   size_t n = 0;
   bool hasData = false;
   n += snprintf(msg + n, sizeof(msg) - n, MESH_LONG_NAME "\n");
+
+  // orario locale di invio (stessa formattazione a icone del resto del testo)
+  if (timeSyncValid()) {
+    time_t tt = time(nullptr);
+    struct tm lt; localtime_r(&tt, &lt);
+    n += snprintf(msg + n, sizeof(msg) - n, "🕒 %02d:%02d\n", lt.tm_hour, lt.tm_min);
+  }
 
   if (uiFieldFresh(g_ui.tempC, now)) {
     n += snprintf(msg + n, sizeof(msg) - n, "🌡️ %.1f°C", g_ui.tempC.val);
@@ -160,8 +174,8 @@ static void meshSendWeatherText(uint8_t chanIdx) {
   }
   n += snprintf(msg + n, sizeof(msg) - n,
                 "\n📡 Vuoi la tua stazione meteo sulla mesh? urly.it/31g1b7");
-  if (!hasData) return;
-  meshSendText(msg, chanIdx);
+  if (!hasData) return false;
+  return meshSendText(msg, chanIdx);
 }
 
 // ---------------------------------------------------------------------------
@@ -207,6 +221,28 @@ static void checkAstroSend() {
 #endif // MESH_ENABLED
 
 // ---------------------------------------------------------------------------
+// Tasto PRG: pressione breve = schermata successiva / navigazione menu;
+// oltre 700 ms = apertura/selezione nel menu (scatta senza attendere il
+// rilascio). Debounce: rilasci sotto i 60 ms vengono ignorati.
+// ---------------------------------------------------------------------------
+static void pollButton(uint32_t now) {
+  static bool     prev      = HIGH;
+  static uint32_t tPress    = 0;
+  static bool     longFired = false;
+  bool b = digitalRead(PIN_BUTTON);
+  if (b == LOW) {
+    if (prev == HIGH) { tPress = now; longFired = false; }
+    else if (!longFired && now - tPress >= 700) {
+      longFired = true;
+      uiButton(true); uiDraw();
+    }
+  } else if (prev == LOW) {
+    if (!longFired && now - tPress >= 60) { uiButton(false); uiDraw(); }
+  }
+  prev = b;
+}
+
+// ---------------------------------------------------------------------------
 static void dispatchFrame(const uint8_t *buf, size_t len, float rssi) {
   for (size_t i = 0; i < g_sensorDriverCount; i++) {
     const SensorDriver *d = g_sensorDrivers[i];
@@ -241,6 +277,8 @@ void setup() {
 
   gfxInit();
   uiInit();
+  uiSplash();
+  delay(5000);
   gfxClear();
   gfxText(0, 12, "Init SX1262...");
   gfxFlush();
@@ -268,12 +306,7 @@ void loop() {
   if (!timeSyncDone()) {
     timeSyncTick();
 
-    static bool btnPrev = HIGH; static uint32_t btnLast = 0;
-    bool btn = digitalRead(PIN_BUTTON);
-    if (btn != btnPrev && now - btnLast > 60) {
-      btnLast = now; btnPrev = btn;
-      if (btn == LOW) { uiNextScreen(); uiDraw(); }
-    }
+    pollButton(now);
     static uint32_t lastDraw = 0;
     if (now - lastDraw > 1000) { lastDraw = now; uiDraw(); }
     return;
@@ -304,12 +337,7 @@ void loop() {
   }
 
   // --- Tasto PRG ----------------------------------------------------------
-  static bool btnPrev = HIGH; static uint32_t btnLast = 0;
-  bool btn = digitalRead(PIN_BUTTON);
-  if (btn != btnPrev && now - btnLast > 60) {
-    btnLast = now; btnPrev = btn;
-    if (btn == LOW) { uiNextScreen(); uiDraw(); }
-  }
+  pollButton(now);
 
   // --- Campionatura storico ----------------------------------------------
   static uint32_t nextSample = 0;

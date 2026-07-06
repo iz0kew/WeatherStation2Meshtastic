@@ -8,6 +8,8 @@
 #include "../timesync.h"
 #include "../astro.h"
 #include "../history.h"
+#include "../battery.h"
+#include "splash_logo.h"
 #include "user_config.h"
 #include <time.h>
 
@@ -81,6 +83,18 @@ void uiDrawGraph(const char *title, const char *tag, HistGetFn get, const char *
 
 // ---------------------------------------------------------------------------
 void uiInit() {}
+
+// Schermata di avvio: nome progetto in alto al centro, release, logo sotto.
+void uiSplash() {
+  static const char *TITLE = "WeatherStation2Meshtastic";
+  static const char *REL   = "v" FW_VERSION;
+  gfxClear();
+  gfxTextSmall((GFX_W - gfxTextWidthSmall(TITLE)) / 2, 8, TITLE);
+  gfxText((GFX_W - gfxTextWidth(REL)) / 2, 20, REL);
+  gfxXBM((GFX_W - SPLASH_LOGO_W) / 2, 24 + (GFX_H - 24 - SPLASH_LOGO_H) / 2,
+         SPLASH_LOGO_W, SPLASH_LOGO_H, SPLASH_LOGO_BITS);
+  gfxFlush();
+}
 
 void uiSubmit(const SensorReading &r) {
   uint32_t now = millis();
@@ -178,6 +192,12 @@ static void scrMeshDraw() {
 
   snprintf(line, sizeof(line), "TX %lu  RSSI %.0f", (unsigned long)meshPacketsSent(), g_ui.lastRssi);
   gfxText(0, 51, line);
+
+  // alimentazione: percentuale batteria se collegata, altrimenti cavo USB
+  float bv; int bp;
+  if (batteryRead(bv, bp)) snprintf(line, sizeof(line), "Batt %d%%  %.2fV", bp, bv);
+  else                     snprintf(line, sizeof(line), "Alimentazione USB");
+  gfxText(0, 63, line);
 }
 
 static void scrTimeDraw() {
@@ -304,10 +324,108 @@ void uiNextScreen() {
   }
 }
 
+// ===========================================================================
+// Menu invio manuale (finestra overlay, tasto PRG)
+//   pressione lunga: apre il menu / seleziona la voce evidenziata
+//   pressione breve: scorre le voci
+//   10 s senza input: si chiude e torna alla schermata corrente
+// ===========================================================================
+#if MESH_ENABLED
+extern bool meshSendWeatherText(uint8_t chanIdx);   // definita in main.cpp
+
+#define MENU_TIMEOUT_MS  10000UL   // inattivita' -> chiusura
+#define MENU_RESULT_MS    2000UL   // durata del messaggio di esito
+
+enum MenuState { M_OFF, M_CHAN, M_CONFIRM, M_RESULT };
+static MenuState s_menu       = M_OFF;
+static int       s_menuSel    = 0;      // voce evidenziata
+static uint8_t   s_menuChan   = 0;      // canale scelto per l'invio
+static uint32_t  s_menuLastMs = 0;      // ultimo input (per il timeout)
+static bool      s_menuSentOk = false;  // esito dell'invio forzato
+
+static void menuTick(uint32_t now) {
+  if (s_menu == M_OFF) return;
+  uint32_t limit = (s_menu == M_RESULT) ? MENU_RESULT_MS : MENU_TIMEOUT_MS;
+  if (now - s_menuLastMs > limit) s_menu = M_OFF;
+}
+
+static void menuDraw() {
+  const int X = 6, Y = 9, W = 116, H = 48;
+  gfxClearRect(X, Y, W, H);
+  gfxFrame(X, Y, W, H);
+
+  if (s_menu == M_RESULT) {
+    const char *t = s_menuSentOk ? "Inviato!" : "Nessun dato";
+    gfxText((GFX_W - gfxTextWidth(t)) / 2, Y + 28, t);
+    return;
+  }
+
+  const char *items[3];
+  int nItems;
+  char title[24];
+  if (s_menu == M_CHAN) {
+    snprintf(title, sizeof(title), "Invio manuale");
+    items[0] = "Ch0 " MESH_CHANNEL_NAME;
+    items[1] = "Ch1 " MESH_TEXT_CHANNEL_NAME;
+    items[2] = "Indietro";
+    nItems = 3;
+  } else {   // M_CONFIRM
+    snprintf(title, sizeof(title), "Invio su Ch%u?", (unsigned)s_menuChan);
+    items[0] = "Conferma";
+    items[1] = "Indietro";
+    nItems = 2;
+  }
+  gfxText(X + 4, Y + 11, title);
+  gfxLine(X + 2, Y + 14, X + W - 3, Y + 14);
+  for (int i = 0; i < nItems; i++) {
+    int y = Y + 24 + i * 11;
+    if (i == s_menuSel) gfxText(X + 4, y, ">");
+    gfxText(X + 12, y, items[i]);
+  }
+}
+#endif // MESH_ENABLED
+
+void uiButton(bool longPress) {
+#if MESH_ENABLED
+  uint32_t now = millis();
+  s_menuLastMs = now;
+  switch (s_menu) {
+    case M_OFF:
+      // menu disponibile solo a time-sync conclusa: un TX forzato durante la
+      // finestra riporterebbe la radio in FSK interrompendo la sincronizzazione
+      if (longPress) { if (timeSyncDone()) { s_menu = M_CHAN; s_menuSel = 0; } }
+      else uiNextScreen();
+      break;
+    case M_CHAN:
+      if (!longPress)            s_menuSel = (s_menuSel + 1) % 3;
+      else if (s_menuSel == 2)   s_menu = M_OFF;                          // Indietro
+      else { s_menuChan = (uint8_t)s_menuSel; s_menu = M_CONFIRM; s_menuSel = 0; }
+      break;
+    case M_CONFIRM:
+      if (!longPress)            s_menuSel = (s_menuSel + 1) % 2;
+      else if (s_menuSel == 1) { s_menu = M_CHAN; s_menuSel = s_menuChan; } // Indietro
+      else {
+        s_menuSentOk = meshSendWeatherText(s_menuChan);
+        s_menu = M_RESULT;
+      }
+      break;
+    case M_RESULT:
+      s_menu = M_OFF;
+      break;
+  }
+#else
+  if (!longPress) uiNextScreen();
+#endif
+}
+
 void uiDraw() {
   uint32_t now = millis();
   if (!SCREENS[s_cur]->available(now)) uiNextScreen();   // schermata scaduta: avanza
   gfxClear();
   SCREENS[s_cur]->draw();
+#if MESH_ENABLED
+  menuTick(now);
+  if (s_menu != M_OFF) menuDraw();
+#endif
   gfxFlush();
 }
