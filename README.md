@@ -316,6 +316,10 @@ src/
   timesync.{h,cpp}  astro.{h,cpp}  history.h  battery.{h,cpp}
 ```
 
+## Autore / Author
+
+**IZ0KEW**
+
 ## Licenza / License
 
 Codice riusato da EcoWittStation2Meshtastic (MIT). Vedi i singoli file per i
