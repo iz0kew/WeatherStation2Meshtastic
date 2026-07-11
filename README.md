@@ -24,7 +24,7 @@ V3 / V4** (ESP32‑S3 + Semtech **SX1262**).*
 
 - **Multi‑sensore selezionabile**: scegli quali sensori decodificare; il firmware
   compila **solo** i parser e le schermate necessari (build modulare).
-- **14 sensori supportati** su due gruppi radio (vedi tabella sotto).
+- **20 sensori supportati** su due gruppi radio (vedi tabella sotto).
 - **Gateway Meshtastic hand‑made**: AES‑128/256‑CTR, protobuf, due canali
   (telemetria + testo), NodeInfo, posizione fissa sulla mappa.
 - **Telemetria nativa**: `EnvironmentMetrics` + `AirQualityMetrics` (temperatura,
@@ -34,7 +34,7 @@ V3 / V4** (ESP32‑S3 + Semtech **SX1262**).*
   first sample") e finestra valida derivata dalla **data di build**.
 - **Bollettini automatici**: 3 bollettini astronomici al giorno (alba+1h,
   mezzogiorno, tramonto−1h) sul canale principale + bollettino a intervallo fisso
-  sul canale testo, con emoji e **orario locale di invio** (🕒).
+  sul canale testo, con emoji e **data e orario locale di invio** (📅 🕒).
 - **Avvisi fulmini** sul canale testo con soglia configurabile.
 - **Invio manuale dei bollettini**: pressione **prolungata** del tasto PRG →
   menu a finestra per scegliere il canale (Ch0/Ch1) → conferma invio; ogni
@@ -185,7 +185,7 @@ di PRG apre il menu di invio manuale (breve = scorri voce, lunga = seleziona).
 
 - **Selectable multi‑sensor**: pick which sensors to decode; the firmware compiles
   **only** the needed parsers and screens (modular build).
-- **14 supported sensors** across two radio groups (see table below).
+- **20 supported sensors** across two radio groups (see table below).
 - **Hand‑made Meshtastic gateway**: AES‑128/256‑CTR, protobuf, two channels
   (telemetry + text), NodeInfo, fixed map position.
 - **Native telemetry**: `EnvironmentMetrics` + `AirQualityMetrics` (temperature,
@@ -195,7 +195,7 @@ di PRG apre il menu di invio manuale (breve = scorri voce, lunga = seleziona).
   **build date**.
 - **Automatic bulletins**: 3 daily astronomy bulletins (sunrise+1h, noon,
   sunset−1h) on the primary channel + a fixed‑interval bulletin on the text
-  channel, with emoji and the **local send time** (🕒).
+  channel, with emoji and the **local send date and time** (📅 🕒).
 - **Lightning alerts** on the text channel with a configurable threshold.
 - **Manual bulletin send**: **long‑press** the PRG button → windowed menu to
   pick the channel (Ch0/Ch1) → confirm; every submenu has a "Back" entry and
