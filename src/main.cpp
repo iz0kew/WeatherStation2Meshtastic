@@ -84,13 +84,14 @@ static void checkLightningAlert(uint32_t now) {
   if (g_ui.strikeTotal <= lastAlertStrikes) return;
 
   lastAlertMs = now; lastAlertStrikes = g_ui.strikeTotal;
-  char msg[112];
+  char msg[128];
   size_t mn = snprintf(msg, sizeof(msg), "⚡ " MESH_LONG_NAME "\n%lu fulmini  ~%u km",
                        (unsigned long)delta, (unsigned)g_ui.lastDistKm);
   if (timeSyncValid() && mn < sizeof(msg)) {
     time_t tt = time(nullptr);
     struct tm lt; localtime_r(&tt, &lt);
-    snprintf(msg + mn, sizeof(msg) - mn, "\n🕒 %02d:%02d", lt.tm_hour, lt.tm_min);
+    snprintf(msg + mn, sizeof(msg) - mn, "\n📅 %02d/%02d/%04d  🕒 %02d:%02d",
+             lt.tm_mday, lt.tm_mon + 1, lt.tm_year + 1900, lt.tm_hour, lt.tm_min);
   }
   meshSendText(msg);   // canale testo (default)
   Serial.printf("[mesh] allarme fulmini score=%.2f delta=%lu @%ukm\n",
@@ -110,11 +111,12 @@ bool meshSendWeatherText(uint8_t chanIdx) {
   bool hasData = false;
   n += snprintf(msg + n, sizeof(msg) - n, MESH_LONG_NAME "\n");
 
-  // orario locale di invio (stessa formattazione a icone del resto del testo)
+  // data e orario locale di invio (stessa formattazione a icone del resto del testo)
   if (timeSyncValid()) {
     time_t tt = time(nullptr);
     struct tm lt; localtime_r(&tt, &lt);
-    n += snprintf(msg + n, sizeof(msg) - n, "🕒 %02d:%02d\n", lt.tm_hour, lt.tm_min);
+    n += snprintf(msg + n, sizeof(msg) - n, "📅 %02d/%02d/%04d  🕒 %02d:%02d\n",
+                  lt.tm_mday, lt.tm_mon + 1, lt.tm_year + 1900, lt.tm_hour, lt.tm_min);
   }
 
   if (uiFieldFresh(g_ui.tempC, now)) {
