@@ -116,9 +116,12 @@ static void checkLightningAlert(uint32_t now) {
 // l'ordine delle chiamate sotto), mai i dati dei sensori.
 static void appendIfFits(char *msg, size_t &n, const char *line) {
   size_t len = strlen(line);
-  if (n + len > WEATHER_MSG_BUDGET) return;
-  memcpy(msg + n, line, len);
-  n += len;
+  if (n + len <= WEATHER_MSG_BUDGET) {
+    memcpy(msg + n, line, len);
+    n += len;
+  }
+  msg[n] = '\0';   // msg sempre terminata correttamente (anche se la riga e'
+                   // stata scartata per budget), come farebbe snprintf
 }
 
 // ---------------------------------------------------------------------------
