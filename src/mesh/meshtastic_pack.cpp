@@ -8,15 +8,57 @@
 // ============================================================================
 #include "meshtastic_pack.h"
 #include "../radio/radio.h"
+#include "../board_config.h"
 #include "../timesync.h"
 #include "../history.h"
 #include "user_config.h"
 #include <Crypto.h>
 #include <AES.h>
 #include <CTR.h>
-#include <esp_system.h>
-#include <esp_mac.h>
 #include <time.h>
+#if defined(ARDUINO_ARCH_ESP32)
+  #include <esp_system.h>
+  #include <esp_mac.h>
+#elif defined(ARDUINO_ARCH_NRF52)
+  #include <nrf.h>
+#endif
+
+// ---------------------------------------------------------------------------
+// HAL minimo: ID univoco di fabbrica e RNG per il packet id/nonce.
+//   ESP32: MAC WiFi (STA) + esp_random() (RNG hardware).
+//   nRF52: DEVICEID di fabbrica Nordic (sempre presente, nessuna radio
+//   necessaria) + PRNG seedato da esso e da micros(). Qui l'unicita' del
+//   packet id serve solo per il nonce AES-CTR e per il dedup del ricevente:
+//   la segretezza del canale e' gia' garantita dalla PSK, quindi un PRNG
+//   software (non crittografico) e' sufficiente, a differenza di un CSPRNG.
+// ---------------------------------------------------------------------------
+static uint32_t hwUniqueId32() {
+#if defined(ARDUINO_ARCH_ESP32)
+  uint8_t mac[6];
+  esp_read_mac(mac, ESP_MAC_WIFI_STA);
+  return ((uint32_t)mac[2] << 24) | ((uint32_t)mac[3] << 16) |
+         ((uint32_t)mac[4] << 8)  |  (uint32_t)mac[5];
+#elif defined(ARDUINO_ARCH_NRF52)
+  return NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1];
+#else
+  #error "hwUniqueId32(): piattaforma non supportata"
+#endif
+}
+
+static uint32_t hwRandom32() {
+#if defined(ARDUINO_ARCH_ESP32)
+  return esp_random();
+#elif defined(ARDUINO_ARCH_NRF52)
+  static bool seeded = false;
+  if (!seeded) {
+    seeded = true;
+    randomSeed(NRF_FICR->DEVICEID[0] ^ NRF_FICR->DEVICEID[1] ^ micros());
+  }
+  return ((uint32_t)random(0, 0x10000) << 16) | (uint32_t)random(0, 0x10000);
+#else
+  #error "hwRandom32(): piattaforma non supportata"
+#endif
+}
 
 // ---------------------------------------------------------------------------
 // PSK dei canali (da settings.ini -> user_config.h). 16 (AES-128) o 32 (AES-256).
@@ -89,10 +131,7 @@ static void aesEncrypt(uint8_t *out, const uint8_t *in, size_t len,
 
 // ---------------------------------------------------------------------------
 void meshInit() {
-  uint8_t mac[6];
-  esp_read_mac(mac, ESP_MAC_WIFI_STA);
-  s_nodeId = ((uint32_t)mac[2] << 24) | ((uint32_t)mac[3] << 16) |
-             ((uint32_t)mac[4] << 8)  |  (uint32_t)mac[5];
+  s_nodeId = hwUniqueId32();
   if (s_nodeId == 0 || s_nodeId == BROADCAST_ADDR) s_nodeId = 0x12345678;
 
 #if MESH_SHORT_NAME_AUTO
@@ -125,7 +164,7 @@ static bool meshTransmit(const uint8_t *plain, size_t plainLen, uint8_t chanIdx 
   size_t         pskLen   = (chanIdx == 1) ? s_pskLen1   : s_pskLen0;
   uint8_t        chanHash = (chanIdx == 1) ? s_chanHash1 : s_chanHash0;
 
-  uint32_t pktId = esp_random();
+  uint32_t pktId = hwRandom32();
   if (pktId == 0) pktId = 1;
 
   uint8_t nonce[16] = {0};
@@ -276,7 +315,7 @@ bool meshSendNodeInfo() {
   u = pbBytesField(user, u, 1, (const uint8_t *)nodeIdStr,        strlen(nodeIdStr));
   u = pbBytesField(user, u, 2, (const uint8_t *)MESH_LONG_NAME,   strlen(MESH_LONG_NAME));
   u = pbBytesField(user, u, 3, (const uint8_t *)s_shortName,      strlen(s_shortName));
-  u = pbVarintField(user, u, 5, 43);   // hw_model: HELTEC_V3 = 43
+  u = pbVarintField(user, u, 5, MESH_HW_MODEL);   // hw_model (hardware.proto)
   u = pbVarintField(user, u, 9, 1);    // is_unmessagable: nodo TX-only
   return sendData(PORT_NODEINFO, user, u, 0);
 }

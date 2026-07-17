@@ -1,8 +1,10 @@
 // ============================================================================
-// battery.cpp — lettura VBAT via ADC con partitore commutato da ADC_Ctrl.
+// battery_esp32.cpp — lettura VBAT via ADC con partitore commutato da
+//   ADC_Ctrl (Heltec WiFi LoRa 32 V3/V4, ESP32-S3).
 // ============================================================================
 #include "battery.h"
 #include "board_config.h"
+#if defined(BOARD_HELTEC_V3) || defined(BOARD_HELTEC_V4)
 
 #define BATT_REFRESH_MS 5000UL   // la UI ridisegna ogni secondo: cache lettura
 
@@ -49,3 +51,5 @@ bool batteryRead(float &volts, int &percent) {
   percent = voltsToPercent(cachedV);
   return cachedV >= 3.0f;   // sotto 3V il partitore e' scollegato: niente batteria
 }
+
+#endif // BOARD_HELTEC_V3 || BOARD_HELTEC_V4

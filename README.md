@@ -3,18 +3,36 @@
 Gateway modulare che riceve sensori meteo wireless a **868 MHz** (GFSK) e li
 ritrasmette sulla rete **Meshtastic** (LoRa), con display OLED, sincronizzazione
 oraria dalla rete e bollettini meteo/astronomici automatici.
-Hardware target: **Heltec WiFi LoRa 32 V3 / V4** (ESP32‑S3 + Semtech **SX1262**).
+Hardware supportato: **Heltec WiFi LoRa 32 V3 / V4** (ESP32‑S3 + Semtech
+**SX1262**, con display OLED) e **Seeed XIAO nRF52840 + Wio‑SX1262 Kit**
+(nRF52840 + SX1262, **senza display**: nessuna schermata/grafico/menu di invio
+manuale, feedback della sincronizzazione oraria sul LED RGB onboard).
 
 *Modular gateway that receives 868 MHz wireless weather sensors (GFSK) and bridges
-them onto the **Meshtastic** LoRa network, with an OLED display, network time‑sync
-and automatic weather/astronomy bulletins. Target hardware: **Heltec WiFi LoRa 32
-V3 / V4** (ESP32‑S3 + Semtech **SX1262**).*
+them onto the **Meshtastic** LoRa network, with network time‑sync and automatic
+weather/astronomy bulletins. Supported hardware: **Heltec WiFi LoRa 32 V3 / V4**
+(ESP32‑S3 + Semtech **SX1262**, with OLED display) and **Seeed XIAO nRF52840 +
+Wio‑SX1262 Kit** (nRF52840 + SX1262, **no display**: no screens/graphs/manual‑send
+menu, time‑sync feedback on the onboard RGB LED instead).*
 
-> Riscrittura modulare di / Modular rewrite of
-> [`iz0kew/EcoWittStation2Meshtastic`](https://github.com/iz0kew/EcoWittStation2Meshtastic):
-> lo stack Meshtastic, il time‑sync, le effemeridi e i parser WH32/WH40/WH57 sono
-> riusati da lì; il resto è nuovo. / the Meshtastic stack, time‑sync, ephemeris and
-> the WH32/WH40/WH57 parsers are reused from there; the rest is new.
+**Versione attuale: v1.2.0**
+
+**Novità in questa release:**
+- Supporto hardware per **Seeed XIAO nRF52840 + Wio‑SX1262** (senza display:
+  feedback della sincronizzazione oraria sul LED RGB onboard).
+- Bollettini testuali: il messaggio non supera **mai** il limite Meshtastic di
+  200 byte — a corto di spazio i campi meno essenziali (astro, data/ora, link)
+  vengono scartati per intero e in ordine di priorità, senza mai troncare un
+  dato a metà.
+
+*Current version: v1.2.0*
+
+*What's new in this release:*
+- *Hardware support for **Seeed XIAO nRF52840 + Wio‑SX1262** (no display:
+  time‑sync feedback on the onboard RGB LED).*
+- *Weather bulletins never exceed the Meshtastic 200‑byte text limit anymore —
+  when space runs short, the least essential fields (astro, date/time, link)
+  are dropped whole and in priority order, never truncating a value mid‑field.*
 
 ---
 
@@ -34,7 +52,10 @@ V3 / V4** (ESP32‑S3 + Semtech **SX1262**).*
   first sample") e finestra valida derivata dalla **data di build**.
 - **Bollettini automatici**: 3 bollettini astronomici al giorno (alba+1h,
   mezzogiorno, tramonto−1h) sul canale principale + bollettino a intervallo fisso
-  sul canale testo, con emoji e **data e orario locale di invio** (📅 🕒).
+  sul canale testo, con emoji e **data e orario locale di invio** (📅 🕒). Il
+  testo non supera mai il limite Meshtastic di 200 byte: a corto di spazio si
+  scartano per intero (mai a metà) prima i campi meno essenziali — astro,
+  data/ora, link — mantenendo sempre i dati sensore.
 - **Avvisi fulmini** sul canale testo con soglia configurabile.
 - **Invio manuale dei bollettini**: pressione **prolungata** del tasto PRG →
   menu a finestra per scegliere il canale (Ch0/Ch1) → conferma invio; ogni
@@ -105,10 +126,10 @@ Scelta dei sensori (devono appartenere allo **stesso gruppo**):
 enabled = WH32, WH40, WH57
 ```
 
-La sezione `[meshtastic]` (frequenza, preset, intervalli, nomi/chiavi dei canali,
-posizione, fuso orario, soglie fulmini) usa le stesse chiavi di EcoWitt. Puoi
-generare l'intero file con `tools/configurator/index.html` (pagina statica che
-gira sul PC e valida il vincolo di gruppo dal vivo).
+La sezione `[meshtastic]` configura frequenza, preset, intervalli, nomi/chiavi
+dei canali, posizione, fuso orario e soglie fulmini. Puoi generare l'intero
+file con `tools/configurator/index.html` (pagina statica che gira sul PC e
+valida il vincolo di gruppo dal vivo).
 
 A ogni build due script di pre‑build aggiornano la configurazione:
 `apply_settings.py` (rete → `include/user_config.h`) e `configure_sensors.py`
@@ -117,10 +138,12 @@ A ogni build due script di pre‑build aggiornano la configurazione:
 ### Compilazione
 
 ```bash
-pio run -e groupA_heltec_v3 -t upload     # Gruppo A, Heltec V3
-pio run -e groupA_heltec_v4 -t upload     # Gruppo A, Heltec V4
-pio run -e groupB_heltec_v3 -t upload     # Gruppo B, Heltec V3
-pio run -e groupB_heltec_v4 -t upload     # Gruppo B, Heltec V4
+pio run -e groupA_heltec_v3 -t upload         # Gruppo A, Heltec V3
+pio run -e groupA_heltec_v4 -t upload         # Gruppo A, Heltec V4
+pio run -e groupA_xiao_wiosx1262 -t upload    # Gruppo A, XIAO nRF52840 + Wio-SX1262
+pio run -e groupB_heltec_v3 -t upload         # Gruppo B, Heltec V3
+pio run -e groupB_heltec_v4 -t upload         # Gruppo B, Heltec V4
+pio run -e groupB_xiao_wiosx1262 -t upload    # Gruppo B, XIAO nRF52840 + Wio-SX1262
 ```
 
 ### How‑to: flashare la scheda Heltec
@@ -154,14 +177,43 @@ minuti per sincronizzare l'orario dalla rete Meshtastic; premi **PRG** per
 scorrere le schermate. A sincronizzazione conclusa, una **pressione prolungata**
 di PRG apre il menu di invio manuale (breve = scorri voce, lunga = seleziona).
 
+### How‑to: flashare la scheda XIAO nRF52840 + Wio‑SX1262
+
+**Prerequisiti**
+- [PlatformIO](https://platformio.org/).
+- Kit **Seeed XIAO nRF52840 + Wio‑SX1262** (SKU 102010710/113010003, modulo
+  radio a pin‑header, non il connettore B2B della variante ESP32‑S3).
+- Cavo USB‑C dati.
+
+**Passi**
+1. Collega la scheda via USB‑C.
+2. Modifica `settings.ini` come per la Heltec.
+3. Compila e carica:
+   ```bash
+   pio run -e groupA_xiao_wiosx1262 -t upload
+   ```
+   Se l'upload non parte, entra manualmente in bootloader UF2 con un
+   **doppio‑tap** del tasto **RST** (comportamento standard delle schede XIAO),
+   poi rilancia l'upload.
+4. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
+   l'inizializzazione radio e la ricezione dei sensori.
+
+Nessun display, nessuna schermata/grafico e nessun tasto utente generico su
+questa scheda: la navigazione schermate e il menu di invio manuale non sono
+disponibili. Durante i ~5 minuti di sincronizzazione oraria il **LED RGB
+onboard** dà il feedback al posto dello schermo: **blu lampeggiante** = in
+ascolto, **verde fisso** (~3 s) = orario confermato, **rosso lampeggiante** =
+finestra scaduta senza conferma.
+
 ### Matrice hardware
 
-| | Heltec V3 | Heltec V4 |
-|--|--|--|
-| MCU / radio | ESP32‑S3 + SX1262 | ESP32‑S3 + SX1262 |
-| Display | OLED SSD1306 128×64 | OLED SSD1306 128×64 |
-| Gruppo A | `groupA_heltec_v3` | `groupA_heltec_v4` |
-| Gruppo B | `groupB_heltec_v3` | `groupB_heltec_v4` |
+| | Heltec V3 | Heltec V4 | XIAO nRF52840 + Wio‑SX1262 |
+|--|--|--|--|
+| MCU / radio | ESP32‑S3 + SX1262 | ESP32‑S3 + SX1262 | nRF52840 + SX1262 |
+| Display | OLED SSD1306 128×64 | OLED SSD1306 128×64 | assente (feedback su LED RGB) |
+| Tasto utente / menu invio manuale | sì (PRG) | sì (PRG) | non disponibile |
+| Gruppo A | `groupA_heltec_v3` | `groupA_heltec_v4` | `groupA_xiao_wiosx1262` |
+| Gruppo B | `groupB_heltec_v3` | `groupB_heltec_v4` | `groupB_xiao_wiosx1262` |
 
 ### Note
 
@@ -195,7 +247,10 @@ di PRG apre il menu di invio manuale (breve = scorri voce, lunga = seleziona).
   **build date**.
 - **Automatic bulletins**: 3 daily astronomy bulletins (sunrise+1h, noon,
   sunset−1h) on the primary channel + a fixed‑interval bulletin on the text
-  channel, with emoji and the **local send date and time** (📅 🕒).
+  channel, with emoji and the **local send date and time** (📅 🕒). The text
+  never exceeds the Meshtastic 200‑byte limit: when space runs short, the
+  least essential fields — astro, date/time, link — are dropped whole (never
+  mid‑field), always keeping the actual sensor data.
 - **Lightning alerts** on the text channel with a configurable threshold.
 - **Manual bulletin send**: **long‑press** the PRG button → windowed menu to
   pick the channel (Ch0/Ch1) → confirm; every submenu has a "Back" entry and
@@ -264,12 +319,15 @@ Pick sensors (same group) in `settings.ini`:
 enabled = WH32, WH40, WH57
 ```
 
-The `[meshtastic]` section mirrors EcoWitt's keys. Two pre‑build scripts run on
-every build: `apply_settings.py` (network → `include/user_config.h`) and
-`configure_sensors.py` (sensors → `src/config/generated_config.h` + `build_src_filter`).
+The `[meshtastic]` section configures frequency, preset, intervals, channel
+names/keys, position, timezone and lightning thresholds. Two pre‑build scripts
+run on every build: `apply_settings.py` (network → `include/user_config.h`)
+and `configure_sensors.py` (sensors → `src/config/generated_config.h` +
+`build_src_filter`).
 
 ```bash
-pio run -e groupA_heltec_v4 -t upload    # or _v3 / groupB_*
+pio run -e groupA_heltec_v4 -t upload         # or _v3 / groupB_*
+pio run -e groupA_xiao_wiosx1262 -t upload    # Seeed XIAO nRF52840 + Wio-SX1262
 ```
 
 ### How‑to: flashing the Heltec board
@@ -293,12 +351,34 @@ to sync time from the Meshtastic network; press **PRG** to cycle through the
 screens. Once time‑sync is done, **long‑press** PRG to open the manual send
 menu (short press = next item, long press = select).
 
+### How‑to: flashing the XIAO nRF52840 + Wio‑SX1262 board
+
+1. Install [PlatformIO](https://platformio.org/) and connect the **Seeed XIAO
+   nRF52840 + Wio‑SX1262 Kit** (SKU 102010710/113010003, pin‑header radio
+   module, not the ESP32‑S3's B2B variant) over USB‑C.
+2. Edit `settings.ini` as for the Heltec.
+3. Build & upload:
+   ```bash
+   pio run -e groupA_xiao_wiosx1262 -t upload
+   ```
+   If the upload doesn't start, enter the UF2 bootloader manually with a
+   **double‑tap** of the **RST** button (standard XIAO behaviour), then
+   re‑run the upload.
+4. Open the serial monitor (`pio device monitor -b 115200`) to check radio
+   init and sensor reception.
+
+No display, no screens/graphs and no general‑purpose user button on this
+board: screen navigation and the manual‑send menu aren't available. During
+the ~5‑minute time‑sync window the **onboard RGB LED** gives feedback
+instead: **blinking blue** = listening, **solid green** (~3 s) = time
+confirmed, **blinking red** = window expired without confirmation.
+
 ---
 
 ## Struttura del progetto / Project layout
 
 ```
-platformio.ini              # env: groupA/B × heltec_v3/v4
+platformio.ini              # env: groupA/B × heltec_v3/v4/xiao_wiosx1262
 settings.ini                # [meshtastic] (parità EcoWitt) + [sensors]
 sensors_catalog.json        # FONTE DI VERITÀ: sensori, gruppi, capability, sorgenti
 tools/
@@ -308,12 +388,16 @@ tools/
 include/user_config.h        # generato (rete/nodo)
 src/
   main.cpp                  # dispatch: match -> parse -> uiSubmit -> meshSubmit
+  board_config.h             # pin per scheda (Heltec V3/V4, XIAO+Wio-SX1262)
   config/generated_config.h # generato (RADIO_*, ENABLE_*, SCREEN_*)
   radio/                    # gestore unico SX1262 a 3 modalità
   sensors/                  # sensor_types.h, registry, sensor_util.h, fineoffset/ lacrosse/ bresser/
   display/                  # display.h, ui.{h,cpp}, splash_logo.h, screens/ (incl. grafici 24h)
+                             #   display_oled.cpp (HAS_OLED) / display_none.cpp (senza display)
   mesh/                     # meshtastic_pack.{h,cpp}
-  timesync.{h,cpp}  astro.{h,cpp}  history.h  battery.{h,cpp}
+  timesync.{h,cpp}  astro.{h,cpp}  history.h
+  battery.h  battery_esp32.cpp  battery_nrf52.cpp
+  led_status.{h,cpp}        # feedback time-sync su LED RGB (schede senza display)
 ```
 
 ## Autore / Author
@@ -322,6 +406,4 @@ src/
 
 ## Licenza / License
 
-Codice riusato da EcoWittStation2Meshtastic (MIT). Vedi i singoli file per i
-riferimenti. *Reused code from EcoWittStation2Meshtastic (MIT); see individual
-files for attribution.*
+Licenza MIT — vedi il file `LICENSE`. *MIT License — see the `LICENSE` file.*

@@ -143,7 +143,7 @@
   <header>
     <div class="brand">
       <h1>WeatherStation2Meshtastic</h1>
-      <div class="sub">configuratore di build · genera settings.ini · Heltec V3/V4 · SX1262</div>
+      <div class="sub">configuratore di build · genera settings.ini · Heltec V3/V4 · XIAO nRF52840+Wio-SX1262 · SX1262</div>
     </div>
     <div class="readout" id="readout" data-g="">
       <div class="seg"><div class="k">Gruppo</div><div class="v" id="rGroup">—</div></div>
@@ -171,8 +171,9 @@
         <div class="field">
           <label for="board">Scheda</label>
           <select id="board">
-            <option value="heltec_wifi_lora_32_V3">Heltec WiFi LoRa 32 V3</option>
-            <option value="heltec_wifi_lora_32_V4">Heltec WiFi LoRa 32 V4</option>
+            <option value="heltec_v3">Heltec WiFi LoRa 32 V3</option>
+            <option value="heltec_v4">Heltec WiFi LoRa 32 V4</option>
+            <option value="xiao_wiosx1262">Seeed XIAO nRF52840 + Wio-SX1262 (senza display)</option>
           </select>
         </div>
       </div>
@@ -478,7 +479,7 @@ function genIni(d){
   L.push("; settings.ini - generato dal Configurator (build-time)");
   L.push("; Sezione [meshtastic] allineata a iz0kew/EcoWittStation2Meshtastic.");
   L.push("; Fonte di verita' sensori: [sensors].enabled (lo script deriva radio e schermate).");
-  const envboard = $("board").value.includes("V4") ? "heltec_v4" : "heltec_v3";
+  const envboard = $("board").value;
   L.push(`; build: pio run -e group${d.ag||"A"}_${envboard} -t upload`);
   L.push("");
   L.push("[meshtastic]");

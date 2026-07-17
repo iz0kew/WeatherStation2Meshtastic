@@ -22,6 +22,7 @@
 #include "display/ui.h"
 #include "mesh/meshtastic_pack.h"
 #include "timesync.h"
+#include "led_status.h"
 #include "astro.h"
 #include "history.h"
 #include <time.h>
@@ -100,6 +101,27 @@ static void checkLightningAlert(uint32_t now) {
 #endif // MESH_LIGHTNING_TEXT
 
 // ---------------------------------------------------------------------------
+// Il pacchetto Meshtastic aggiunge al testo l'overhead del wrapper protobuf
+// (portnum + bytes-field + eventuale bit ok_to_mqtt: fino a ~7 byte, vedi
+// sendData()/meshTransmit() in meshtastic_pack.cpp, che scartano in
+// silenzio tutto cio' che supera i 200 byte). Restiamo sotto questo margine
+// con un cuscinetto di sicurezza.
+#define WEATHER_MSG_BUDGET 190
+
+// Aggiunge una riga gia' formattata al bollettino SOLO se rientra nel
+// budget residuo; se non ci sta la scarta per intero (mai spezzata a
+// meta'). Con molti sensori attivi insieme non tutto entra in un unico
+// pacchetto di testo: a corto di spazio si sacrificano per prime le righe
+// meno essenziali (astro, poi data/ora, poi il link informativo — vedi
+// l'ordine delle chiamate sotto), mai i dati dei sensori.
+static void appendIfFits(char *msg, size_t &n, const char *line) {
+  size_t len = strlen(line);
+  if (n + len > WEATHER_MSG_BUDGET) return;
+  memcpy(msg + n, line, len);
+  n += len;
+}
+
+// ---------------------------------------------------------------------------
 // Bollettino meteo testuale composto dai dati recenti in g_ui + astro.
 // Non-static: richiamata anche dal menu di invio manuale (display/ui.cpp).
 // Ritorna true se il messaggio e' stato effettivamente inviato.
@@ -111,71 +133,86 @@ bool meshSendWeatherText(uint8_t chanIdx) {
   bool hasData = false;
   n += snprintf(msg + n, sizeof(msg) - n, MESH_LONG_NAME "\n");
 
-  // data e orario locale di invio (stessa formattazione a icone del resto del testo)
-  if (timeSyncValid()) {
-    time_t tt = time(nullptr);
-    struct tm lt; localtime_r(&tt, &lt);
-    n += snprintf(msg + n, sizeof(msg) - n, "📅 %02d/%02d/%04d  🕒 %02d:%02d\n",
-                  lt.tm_mday, lt.tm_mon + 1, lt.tm_year + 1900, lt.tm_hour, lt.tm_min);
-  }
+  char line[96];
+  size_t ln;
 
   if (uiFieldFresh(g_ui.tempC, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "🌡️ %.1f°C", g_ui.tempC.val);
+    ln = (size_t)snprintf(line, sizeof(line), "🌡️ %.1f°C", g_ui.tempC.val);
     if (uiFieldFresh(g_ui.humidity, now))
-      n += snprintf(msg + n, sizeof(msg) - n, "  💧 %u%%", (unsigned)(g_ui.humidity.val + 0.5f));
-    n += snprintf(msg + n, sizeof(msg) - n, "\n");
+      ln += (size_t)snprintf(line + ln, sizeof(line) - ln, "  💧 %u%%", (unsigned)(g_ui.humidity.val + 0.5f));
+    snprintf(line + ln, sizeof(line) - ln, "\n");
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.pressureHpa, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "🔆 %.0f hPa\n", g_ui.pressureHpa.val);
+    snprintf(line, sizeof(line), "🔆 %.0f hPa\n", g_ui.pressureHpa.val);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.rainMm, now)) {
     float r1  = history.rainDeltaMm(g_ui.rainMm.val, 3600UL * 1000UL);
     float r24 = history.rainDeltaMm(g_ui.rainMm.val, 24UL * 3600UL * 1000UL);
-    n += snprintf(msg + n, sizeof(msg) - n, "🌧️ 1h %.1fmm  24h %.1fmm\n", r1, r24);
+    snprintf(line, sizeof(line), "🌧️ 1h %.1fmm  24h %.1fmm\n", r1, r24);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.windAvg, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "💨 %.1f m/s\n", g_ui.windAvg.val);
+    snprintf(line, sizeof(line), "💨 %.1f m/s\n", g_ui.windAvg.val);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.uv, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "☀️ UV %.1f\n", g_ui.uv.val);
+    snprintf(line, sizeof(line), "☀️ UV %.1f\n", g_ui.uv.val);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.soil, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "🌱 %u%%\n", (unsigned)(g_ui.soil.val + 0.5f));
+    snprintf(line, sizeof(line), "🌱 %u%%\n", (unsigned)(g_ui.soil.val + 0.5f));
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (uiFieldFresh(g_ui.pm25, now) || uiFieldFresh(g_ui.co2, now)) {
-    n += snprintf(msg + n, sizeof(msg) - n, "🏭");
-    if (uiFieldFresh(g_ui.pm25, now)) n += snprintf(msg + n, sizeof(msg) - n, " PM2.5 %.0f", g_ui.pm25.val);
-    if (uiFieldFresh(g_ui.co2, now))  n += snprintf(msg + n, sizeof(msg) - n, " CO2 %.0f", g_ui.co2.val);
-    n += snprintf(msg + n, sizeof(msg) - n, "\n");
+    ln = (size_t)snprintf(line, sizeof(line), "🏭");
+    if (uiFieldFresh(g_ui.pm25, now)) ln += (size_t)snprintf(line + ln, sizeof(line) - ln, " PM2.5 %.0f", g_ui.pm25.val);
+    if (uiFieldFresh(g_ui.co2, now))  ln += (size_t)snprintf(line + ln, sizeof(line) - ln, " CO2 %.0f", g_ui.co2.val);
+    snprintf(line + ln, sizeof(line) - ln, "\n");
+    appendIfFits(msg, n, line);
     hasData = true;
   }
   if (g_ui.haveLightning && g_ui.strikeTotal > 0) {
     if (g_ui.lastDistKm != 63)
-      n += snprintf(msg + n, sizeof(msg) - n, "⚡ %lu fulmini  ~%u km\n",
-                    (unsigned long)g_ui.strikeTotal, g_ui.lastDistKm);
+      snprintf(line, sizeof(line), "⚡ %lu fulmini  ~%u km\n",
+               (unsigned long)g_ui.strikeTotal, g_ui.lastDistKm);
     else
-      n += snprintf(msg + n, sizeof(msg) - n, "⚡ %lu fulmini\n",
-                    (unsigned long)g_ui.strikeTotal);
+      snprintf(line, sizeof(line), "⚡ %lu fulmini\n", (unsigned long)g_ui.strikeTotal);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
+  // Astro e data/ora: informativi ma meno essenziali dei dati sensore, per
+  // questo appesi in fondo all'ordine di priorita' del budget. Fase lunare
+  // ridotta a emoji+percentuale (niente nome esteso) per restare compatta.
   if (timeSyncValid()) {
+    ln = 0;
     SunTimes sun;
     if (astroGetSunTimes(sun))
-      n += snprintf(msg + n, sizeof(msg) - n, "🌅 %02d:%02d  🌇 %02d:%02d\n",
-                    sun.riseH, sun.riseM, sun.setH, sun.setM);
+      ln += (size_t)snprintf(line + ln, sizeof(line) - ln, "🌅 %02d:%02d  🌇 %02d:%02d\n",
+                              sun.riseH, sun.riseM, sun.setH, sun.setM);
     int illum = (int)(astroMoonIllum() * 100.0f + 0.5f);
-    n += snprintf(msg + n, sizeof(msg) - n, "%s %s  %d%%",
-                  astroMoonPhaseEmoji(), astroMoonPhaseName(), illum);
+    snprintf(line + ln, sizeof(line) - ln, "%s %d%%\n", astroMoonPhaseEmoji(), illum);
+    appendIfFits(msg, n, line);
     hasData = true;
   }
-  n += snprintf(msg + n, sizeof(msg) - n,
-                "\n📡 Vuoi la tua stazione meteo sulla mesh? urly.it/31g1b7");
+  // Data e orario locale di invio: il primo a saltare se lo spazio scarseggia.
+  if (timeSyncValid()) {
+    time_t tt = time(nullptr);
+    struct tm lt; localtime_r(&tt, &lt);
+    snprintf(line, sizeof(line), "📅 %02d/%02d  🕒 %02d:%02d\n",
+             lt.tm_mday, lt.tm_mon + 1, lt.tm_hour, lt.tm_min);
+    appendIfFits(msg, n, line);
+  }
+  snprintf(line, sizeof(line), "\n📡 urly.it/31g1b7");
+  appendIfFits(msg, n, line);
+
   if (!hasData) return false;
   return meshSendText(msg, chanIdx);
 }
@@ -226,7 +263,12 @@ static void checkAstroSend() {
 // Tasto PRG: pressione breve = schermata successiva / navigazione menu;
 // oltre 700 ms = apertura/selezione nel menu (scatta senza attendere il
 // rilascio). Debounce: rilasci sotto i 60 ms vengono ignorati.
+// Disponibile solo sulle schede che definiscono PIN_BUTTON (Heltec V3/V4):
+// il kit XIAO non espone un tasto utente generico, quindi la navigazione
+// schermate e il menu di invio manuale (irrilevanti senza display) restano
+// semplicemente irraggiungibili, senza bisogno di toccare ui.cpp.
 // ---------------------------------------------------------------------------
+#ifdef PIN_BUTTON
 static void pollButton(uint32_t now) {
   static bool     prev      = HIGH;
   static uint32_t tPress    = 0;
@@ -243,6 +285,7 @@ static void pollButton(uint32_t now) {
   }
   prev = b;
 }
+#endif
 
 // ---------------------------------------------------------------------------
 static void dispatchFrame(const uint8_t *buf, size_t len, float rssi) {
@@ -272,18 +315,27 @@ void setup() {
   Serial.printf("Gruppo radio: %d bps, sync 0x%04X, %u driver attivi\n",
                 RADIO_BITRATE_BPS, RADIO_SYNCWORD, (unsigned)g_sensorDriverCount);
 
+#ifdef PIN_VEXT
   pinMode(PIN_VEXT, OUTPUT);
   digitalWrite(PIN_VEXT, VEXT_ON_LEVEL);
   delay(50);
+#endif
+#ifdef PIN_BUTTON
   pinMode(PIN_BUTTON, INPUT_PULLUP);
+#endif
+#ifdef HAS_STATUS_LED
+  ledStatusInit();
+#endif
 
   gfxInit();
   uiInit();
+#ifdef HAS_OLED
   uiSplash();
   delay(5000);
   gfxClear();
   gfxText(0, 12, "Init SX1262...");
   gfxFlush();
+#endif
 
   radioInit();
 
@@ -297,18 +349,31 @@ void setup() {
 
   timeSyncBegin();    // radio -> LoRa RX per 5 min
   uiDraw();
+#ifdef PIN_BUTTON
   Serial.println("Finestra time-sync aperta (5 min) - premi PRG per navigare");
+#else
+  Serial.println("Finestra time-sync aperta (5 min)");
+#endif
 }
 
 // ---------------------------------------------------------------------------
 void loop() {
   uint32_t now = millis();
 
+#ifdef HAS_STATUS_LED
+  // Chiamata ad ogni giro (non solo durante la sync): il modulo gestisce da
+  // solo lo spegnimento qualche secondo dopo l'esito, quindi deve poter
+  // essere richiamato anche a sync ormai conclusa.
+  ledStatusTick();
+#endif
+
   // --- Fase sincronizzazione orario (radio in LoRa RX) --------------------
   if (!timeSyncDone()) {
     timeSyncTick();
 
+#ifdef PIN_BUTTON
     pollButton(now);
+#endif
     static uint32_t lastDraw = 0;
     if (now - lastDraw > 1000) { lastDraw = now; uiDraw(); }
     return;
@@ -339,7 +404,9 @@ void loop() {
   }
 
   // --- Tasto PRG ----------------------------------------------------------
+#ifdef PIN_BUTTON
   pollButton(now);
+#endif
 
   // --- Campionatura storico ----------------------------------------------
   static uint32_t nextSample = 0;
