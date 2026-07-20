@@ -7,6 +7,13 @@
 //     manuale non sono disponibili (vedi display/display_none.cpp e i guard
 //     su PIN_BUTTON/HAS_OLED in main.cpp). Feedback time-sync sul LED RGB
 //     onboard (vedi led_status.cpp, HAS_STATUS_LED).
+//   - MASN — NiceNano nRF52840 + modulo LoRa HT-RA62 (nodo solare open-source,
+//     danielpcostas.dev/masn). Nessun display, nessun PIN_BUTTON/HAS_STATUS_LED
+//     attivo (la scheda ha 2 pulsanti + 2 switch e possibilmente un LED, ma il
+//     pin esatto non e' confermato: vedi commento nel blocco BOARD_MASN_HTRA62
+//     piu' sotto). Richiede la board/variant PlatformIO locale
+//     boards/nicenano_masn.json + variants/nicenano_masn/ (nessuna board
+//     "nicenano" nel platform ufficiale nordicnrf52).
 // ============================================================================
 #pragma once
 
@@ -83,6 +90,50 @@
 
   #define MESH_HW_MODEL  88   // XIAO_NRF52_KIT (hardware.proto HardwareModel)
 
+#elif defined(BOARD_MASN_HTRA62)
+
+  // MASN (danielpcostas.dev/masn) — NiceNano nRF52840 + modulo LoRa HT-RA62.
+  // Nessun HAS_OLED (display/display_none.cpp fornisce le gfx* no-op).
+  // Nessun PIN_BUTTON / HAS_STATUS_LED in questa prima versione: la scheda ha
+  // fisicamente 2 pulsanti + 2 switch (e forse un LED), ma non e' confermato
+  // quale GPIO corrisponda al "tasto utente" ne' se esista un LED pilotabile
+  // via firmware -> menu di invio manuale e feedback LED restano disattivati
+  // finche' non si verifica lo schematico reale (vedi nota sotto).
+  #define BOARD_NAME "MASN (NiceNano nRF52840 + HT-RA62)"
+
+  // ==========================================================================
+  // ATTENZIONE — PINOUT NON VERIFICATO SULL'HARDWARE REALE.
+  // La documentazione MASN indica di selezionare il profilo "NRF52 Pro-micro
+  // DIY" su flasher.meshtastic.org (nessun variant.h dedicato a MASN esiste
+  // nel firmware Meshtastic ufficiale): questo suggerisce che il PCB sia
+  // instradato secondo lo schema pubblico "nRF52 ProMicro DIY + TCXO" gia'
+  // noto alla community (variant nrf52840/diy/nrf52_promicro_diy_tcxo del
+  // firmware Meshtastic), da cui sono stati derivati i numeri pin sotto
+  // (notazione raw nRF52 "porta*32+pin", es. P1.13 = 1*32+13 = 45).
+  // NON E' PERO' CONFERMATO dallo schematico MASN (Schematic_masn-ht-ra62.pdf)
+  // ne' testato su un modulo HT-RA62 reale. Verificare con multimetro/
+  // schematico PRIMA del primo upload: un pinout SPI errato puo' danneggiare
+  // il modulo HT-RA62 o il NiceNano.
+  // ==========================================================================
+  #define PIN_LORA_MISO  2          // P0.02
+  #define PIN_LORA_MOSI  47         // P1.15  (1*32+15)
+  #define PIN_LORA_SCK   43         // P1.11  (1*32+11)
+  #define PIN_LORA_NSS   45         // P1.13  (1*32+13)
+  #define PIN_LORA_DIO1  10         // P0.10
+  #define PIN_LORA_BUSY  29         // P0.29
+  #define PIN_LORA_RST   9          // P0.09
+  #define PIN_LORA_RXEN  17         // P0.17  (DIO2 usato come RF-switch dal modulo)
+  #define RADIO_TCXO_VOLTAGE 1.8f
+
+  // Batteria: lettura ADC nRF52 generica (vedi battery_masn.cpp). Pin VBAT
+  // desunto dallo stesso schema DIY di riferimento (P0.31); nessun pin di
+  // enable dedicato noto per MASN (a differenza della XIAO). Coefficienti di
+  // conversione mV/percentuale in battery_masn.cpp sono PLACEHOLDER da
+  // calibrare con un multimetro sull'hardware reale.
+  #define PIN_VBAT_READ  31         // P0.31
+
+  #define MESH_HW_MODEL  255  // PRIVATE_HW: nessun HardwareModel Meshtastic dedicato a MASN
+
 #else
-  #error "Definisci BOARD_HELTEC_V3, BOARD_HELTEC_V4 o BOARD_XIAO_WIOSX1262 nei build_flags"
+  #error "Definisci BOARD_HELTEC_V3, BOARD_HELTEC_V4, BOARD_XIAO_WIOSX1262 o BOARD_MASN_HTRA62 nei build_flags"
 #endif

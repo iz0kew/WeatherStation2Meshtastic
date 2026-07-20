@@ -1,0 +1,58 @@
+{
+  "build": {
+    "arduino": {
+      "ldscript": "nrf52840_s140_v6.ld"
+    },
+    "core": "nRF5",
+    "cpu": "cortex-m4",
+    "extra_flags": "-DNRF52840_XXAA -DNICENANO_MASN",
+    "f_cpu": "64000000L",
+    "hwids": [
+      ["0x239A", "0x8029"],
+      ["0x239A", "0x0029"]
+    ],
+    "mcu": "nrf52840",
+    "variant": "nicenano_masn",
+    "softdevice": {
+      "sd_flags": "-DS140",
+      "sd_name": "s140",
+      "sd_version": "6.1.1",
+      "sd_fwid": "0x00B6"
+    },
+    "bsp": {
+      "name": "adafruit"
+    },
+    "usb_product": "NiceNano (MASN)"
+  },
+  "connectivity": [
+    "bluetooth"
+  ],
+  "debug": {
+    "jlink_device": "nRF52840_xxAA",
+    "openocd_target": "nrf52.cfg",
+    "svd_path": "nrf52840.svd"
+  },
+  "frameworks": [
+    "arduino"
+  ],
+  "name": "NiceNano nRF52840 (MASN, board locale del progetto)",
+  "upload": {
+    "maximum_ram_size": 248832,
+    "maximum_size": 815104,
+    "protocol": "nrfutil",
+    "speed": 115200,
+    "protocols": [
+      "jlink",
+      "nrfjprog",
+      "nrfutil",
+      "cmsis-dap",
+      "sam-ba",
+      "blackmagic"
+    ],
+    "use_1200bps_touch": true,
+    "require_upload_port": true,
+    "wait_for_upload_port": true
+  },
+  "url": "https://danielpcostas.dev/masn-a-simple-and-open-source-solar-node-for-meshtastic/",
+  "vendor": "MASN (community, non ufficiale)"
+}
