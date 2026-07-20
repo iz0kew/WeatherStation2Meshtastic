@@ -31,22 +31,33 @@ public:
   }
 
   // pioggia caduta nella finestra [now-windowMs, now] rispetto al contatore
-  // cumulativo corrente; gestisce il reset del contatore (cambio batterie)
+  // cumulativo corrente. Somma gli incrementi campione-per-campione invece di
+  // confrontare solo gli estremi: cosi' un reset del contatore del sensore
+  // (cambio batterie, o gli auto-reset periodici tipici dei pluviometri
+  // piezo Fine Offset come WS85/WS90) sporca solo il segmento in cui avviene
+  // -- non l'intera finestra. Con il vecchio confronto singolo, un reset
+  // avvenuto in un punto qualsiasi della finestra faceva collassare il
+  // risultato sull'intero contatore corrente (es. il totale "24h" restava
+  // pari all'intero accumulo dal reset per le successive 24h). Gestisce
+  // anche piu' reset nella stessa finestra.
   float rainDeltaMm(float curMm, uint32_t windowMs) const {
     if (n == 0 || curMm < 0) return 0;
     uint32_t now = millis();
-    int32_t oldRain10 = -1;
+    float    total = 0;
+    bool     haveBaseline = false;
+    int32_t  prevRain10 = 0;
     for (uint16_t i = 0; i < n; i++) {        // dal piu' vecchio
       const HistSample &s = get(i);
-      if ((uint32_t)(now - s.ms) <= windowMs && s.rain10 >= 0) {
-        oldRain10 = s.rain10;
-        break;
-      }
+      if ((uint32_t)(now - s.ms) > windowMs || s.rain10 < 0) continue;
+      if (!haveBaseline) { prevRain10 = s.rain10; haveBaseline = true; continue; }
+      int32_t diff10 = s.rain10 - prevRain10;
+      total += (diff10 >= 0) ? diff10 * 0.1f : s.rain10 * 0.1f;  // negativo = reset
+      prevRain10 = s.rain10;
     }
-    if (oldRain10 < 0) return 0;
-    float delta = curMm - oldRain10 * 0.1f;
-    if (delta < 0) delta = curMm;             // contatore azzerato nel frattempo
-    return delta;
+    if (!haveBaseline) return 0;              // nessun campione utile nella finestra
+    float diffCur = curMm * 10.0f - prevRain10;
+    total += (diffCur >= 0) ? diffCur * 0.1f : curMm;            // negativo = reset
+    return total;
   }
 
 private:
