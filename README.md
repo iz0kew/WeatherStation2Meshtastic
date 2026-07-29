@@ -15,21 +15,24 @@ weather/astronomy bulletins. Supported hardware: **Heltec WiFi LoRa 32 V3 / V4**
 Wio‑SX1262 Kit** (nRF52840 + SX1262, **no display**: no screens/graphs/manual‑send
 menu, time‑sync feedback on the onboard RGB LED instead).*
 
-**Versione attuale: v1.2.0**
+**Versione attuale: v1.2.1**
 
 **Novità in questa release:**
-- Supporto hardware per **Seeed XIAO nRF52840 + Wio‑SX1262** (senza display:
-  feedback della sincronizzazione oraria sul LED RGB onboard).
-- Bollettini testuali: il messaggio non supera **mai** il limite Meshtastic di
-  200 byte — a corto di spazio i campi meno essenziali (astro, data/ora, link)
-  vengono scartati per intero e in ordine di priorità, senza mai troncare un
-  dato a metà.
+- Fix: il bollettino meteo mostra i fulmini accumulati nelle **ultime 24h**
+  invece del totale cumulativo del sensore (mai azzerato).
+- Fix: pioggia 1h/24h non collassa più sull'intero contatore dopo un reset
+  del sensore (es. cambio batterie sui pluviometri piezo).
+- Fix: il bollettino meteo non veniva più troncato in coda al messaggio.
 
-*Current version: v1.2.0*
+*Current version: v1.2.1*
 
 *What's new in this release:*
-- *Hardware support for **Seeed XIAO nRF52840 + Wio‑SX1262** (no display:
-  time‑sync feedback on the onboard RGB LED).*
+- *Fix: the weather bulletin now shows lightning strikes accumulated in the
+  **last 24h** instead of the sensor's cumulative (never‑reset) total.*
+- *Fix: 1h/24h rainfall no longer collapses onto the full counter after a
+  sensor reset (e.g. battery change on piezo rain gauges).*
+- *Fix: the weather bulletin was no longer being truncated at the end of the
+  message.*
 - *Weather bulletins never exceed the Meshtastic 200‑byte text limit anymore —
   when space runs short, the least essential fields (astro, date/time, link)
   are dropped whole and in priority order, never truncating a value mid‑field.*
