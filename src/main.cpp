@@ -182,14 +182,17 @@ bool meshSendWeatherText(uint8_t chanIdx) {
     appendIfFits(msg, n, line);
     hasData = true;
   }
-  if (g_ui.haveLightning && g_ui.strikeTotal > 0) {
-    if (g_ui.lastDistKm != 63)
-      snprintf(line, sizeof(line), "⚡ %lu fulmini  ~%u km\n",
-               (unsigned long)g_ui.strikeTotal, g_ui.lastDistKm);
-    else
-      snprintf(line, sizeof(line), "⚡ %lu fulmini\n", (unsigned long)g_ui.strikeTotal);
-    appendIfFits(msg, n, line);
-    hasData = true;
+  if (g_ui.haveLightning) {
+    uint32_t strikes24 = history.strikeDelta(g_ui.strikeTotal, 24UL * 3600UL * 1000UL);
+    if (strikes24 > 0) {
+      if (g_ui.lastDistKm != 63)
+        snprintf(line, sizeof(line), "⚡ 24h %lu fulmini  ~%u km\n",
+                 (unsigned long)strikes24, g_ui.lastDistKm);
+      else
+        snprintf(line, sizeof(line), "⚡ 24h %lu fulmini\n", (unsigned long)strikes24);
+      appendIfFits(msg, n, line);
+      hasData = true;
+    }
   }
   // Astro e data/ora: informativi ma meno essenziali dei dati sensore, per
   // questo appesi in fondo all'ordine di priorita' del budget. Fase lunare

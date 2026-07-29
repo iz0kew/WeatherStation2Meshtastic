@@ -60,6 +60,30 @@ public:
     return total;
   }
 
+  // fulmini caduti nella finestra [now-windowMs, now], stessa logica
+  // anti-reset di rainDeltaMm (somma incrementi campione-per-campione
+  // cosi' un reset del contatore del sensore sporca solo il segmento in
+  // cui avviene, non l'intera finestra).
+  uint32_t strikeDelta(uint32_t curStrikes, uint32_t windowMs) const {
+    if (n == 0) return 0;
+    uint32_t now = millis();
+    uint32_t total = 0;
+    bool     haveBaseline = false;
+    int32_t  prevStrikes = 0;
+    for (uint16_t i = 0; i < n; i++) {        // dal piu' vecchio
+      const HistSample &s = get(i);
+      if ((uint32_t)(now - s.ms) > windowMs || s.strikes < 0) continue;
+      if (!haveBaseline) { prevStrikes = s.strikes; haveBaseline = true; continue; }
+      int32_t diff = s.strikes - prevStrikes;
+      total += (uint32_t)((diff >= 0) ? diff : s.strikes);       // negativo = reset
+      prevStrikes = s.strikes;
+    }
+    if (!haveBaseline) return 0;              // nessun campione utile nella finestra
+    int32_t diffCur = (int32_t)curStrikes - prevStrikes;
+    total += (uint32_t)((diffCur >= 0) ? diffCur : (int32_t)curStrikes);  // negativo = reset
+    return total;
+  }
+
 private:
   HistSample buf[HIST_MAX];
   uint16_t head = 0, n = 0;
