@@ -149,13 +149,13 @@ A ogni build due script di pre‑build aggiornano la configurazione:
 pio run -e groupA_heltec_v3 -t upload         # Gruppo A, Heltec V3
 pio run -e groupA_heltec_v4 -t upload         # Gruppo A, Heltec V4
 pio run -e groupA_xiao_wiosx1262 -t upload    # Gruppo A, XIAO nRF52840 + Wio-SX1262
-pio run -e groupA_masn_htra62 -t upload       # Gruppo A, MASN NiceNano + HT-RA62 (sperim.)
-pio run -e groupA_faketec_htra62 -t upload    # Gruppo A, FakeTec Pro Micro + HT-RA62 (sperim.)
+pio run -e groupA_masn_htra62                 # Gruppo A, MASN NiceNano + HT-RA62 (sperim., .uf2 va copiato a mano)
+pio run -e groupA_faketec_htra62              # Gruppo A, FakeTec Pro Micro + HT-RA62 (sperim., .uf2 va copiato a mano)
 pio run -e groupB_heltec_v3 -t upload         # Gruppo B, Heltec V3
 pio run -e groupB_heltec_v4 -t upload         # Gruppo B, Heltec V4
 pio run -e groupB_xiao_wiosx1262 -t upload    # Gruppo B, XIAO nRF52840 + Wio-SX1262
-pio run -e groupB_masn_htra62 -t upload       # Gruppo B, MASN NiceNano + HT-RA62 (sperim.)
-pio run -e groupB_faketec_htra62 -t upload    # Gruppo B, FakeTec Pro Micro + HT-RA62 (sperim.)
+pio run -e groupB_masn_htra62                 # Gruppo B, MASN NiceNano + HT-RA62 (sperim., .uf2 va copiato a mano)
+pio run -e groupB_faketec_htra62              # Gruppo B, FakeTec Pro Micro + HT-RA62 (sperim., .uf2 va copiato a mano)
 ```
 
 ### How‑to: flashare la scheda Heltec
@@ -233,17 +233,25 @@ finestra scaduta senza conferma.
 - Scheda **MASN** variante **HT‑RA62** (NiceNano nRF52840).
 - Cavo USB‑C dati.
 
+Il bootloader di questi cloni si presenta come **chiavetta USB** (mass
+storage, es. "NICENANOBOOT"), non come porta seriale: `pio run -t upload`
+(protocollo nrfutil) non trova nulla da caricare, va quindi flashato a mano
+con un file `.uf2`.
+
 **Passi**
 1. Collega la scheda via USB‑C.
 2. Modifica `settings.ini` come per la Heltec.
-3. Compila e carica:
+3. Compila (senza `-t upload`):
    ```bash
-   pio run -e groupA_masn_htra62 -t upload
+   pio run -e groupA_masn_htra62
    ```
-   Se l'upload non parte, entra manualmente in bootloader UF2 con un
-   **doppio‑tap** del tasto **RST** (comportamento standard del bootloader
-   Adafruit nRF52 usato dal NiceNano), poi rilancia l'upload.
-4. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
+   Genera `.pio/build/groupA_masn_htra62/firmware.uf2`.
+4. Entra in bootloader con un **doppio‑tap** del tasto **RST** (comportamento
+   standard del bootloader Adafruit nRF52 usato dal NiceNano): sul PC compare
+   una nuova chiavetta USB.
+5. Trascina/copia `firmware.uf2` sulla chiavetta: la scheda flasha da sola e
+   riparte in automatico.
+6. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
    l'inizializzazione radio e la ricezione dei sensori.
 
 Nessun display, nessun tasto utente e nessun feedback LED su questa scheda in
@@ -276,17 +284,25 @@ LoRa, come la XIAO).
   **HT‑RA62** montati.
 - Cavo USB‑C dati.
 
+Il bootloader di questi cloni si presenta come **chiavetta USB** (mass
+storage, es. "NICENANOBOOT"), non come porta seriale: `pio run -t upload`
+(protocollo nrfutil) non trova nulla da caricare, va quindi flashato a mano
+con un file `.uf2`.
+
 **Passi**
 1. Collega la scheda via USB‑C.
 2. Modifica `settings.ini` come per la Heltec.
-3. Compila e carica:
+3. Compila (senza `-t upload`):
    ```bash
-   pio run -e groupA_faketec_htra62 -t upload
+   pio run -e groupA_faketec_htra62
    ```
-   Se l'upload non parte, entra manualmente in bootloader UF2 con un
-   **doppio‑tap** del tasto **RST** (comportamento standard del bootloader
-   Adafruit nRF52 usato dal Pro Micro), poi rilancia l'upload.
-4. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
+   Genera `.pio/build/groupA_faketec_htra62/firmware.uf2`.
+4. Entra in bootloader con un **doppio‑tap** del tasto **RST** (comportamento
+   standard del bootloader Adafruit nRF52 usato dal Pro Micro): sul PC
+   compare una nuova chiavetta USB.
+5. Trascina/copia `firmware.uf2` sulla chiavetta: la scheda flasha da sola e
+   riparte in automatico.
+6. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
    l'inizializzazione radio e la ricezione dei sensori.
 
 Nessun display, nessun tasto utente e nessun feedback LED su questa scheda in
@@ -417,8 +433,8 @@ and `configure_sensors.py` (sensors → `src/config/generated_config.h` +
 ```bash
 pio run -e groupA_heltec_v4 -t upload         # or _v3 / groupB_*
 pio run -e groupA_xiao_wiosx1262 -t upload    # Seeed XIAO nRF52840 + Wio-SX1262
-pio run -e groupA_masn_htra62 -t upload       # MASN NiceNano nRF52840 + HT-RA62 (experimental)
-pio run -e groupA_faketec_htra62 -t upload    # FakeTec NRF52840 Pro Micro + HT-RA62 (experimental)
+pio run -e groupA_masn_htra62                 # MASN NiceNano nRF52840 + HT-RA62 (experimental, .uf2 copied by hand)
+pio run -e groupA_faketec_htra62              # FakeTec NRF52840 Pro Micro + HT-RA62 (experimental, .uf2 copied by hand)
 ```
 
 ### How‑to: flashing the Heltec board
@@ -480,17 +496,24 @@ confirmed, **blinking red** = window expired without confirmation.
 - A **MASN** board, **HT‑RA62** variant (NiceNano nRF52840).
 - Data‑capable USB‑C cable.
 
+This clone's bootloader shows up as a **USB drive** (mass storage, e.g.
+"NICENANOBOOT"), not a serial port: `pio run -t upload` (nrfutil protocol)
+finds nothing to upload to, so flashing is manual via a `.uf2` file.
+
 **Steps**
 1. Connect the board over USB‑C.
 2. Edit `settings.ini` as for the Heltec.
-3. Build & upload:
+3. Build (no `-t upload`):
    ```bash
-   pio run -e groupA_masn_htra62 -t upload
+   pio run -e groupA_masn_htra62
    ```
-   If the upload doesn't start, enter the UF2 bootloader manually with a
-   **double‑tap** of the **RST** button (standard behaviour of the Adafruit
-   nRF52 bootloader used by the NiceNano), then re‑run the upload.
-4. Open the serial monitor (`pio device monitor -b 115200`) to check radio
+   This produces `.pio/build/groupA_masn_htra62/firmware.uf2`.
+4. Enter the bootloader with a **double‑tap** of the **RST** button (standard
+   behaviour of the Adafruit nRF52 bootloader used by the NiceNano): a new
+   USB drive appears on your PC.
+5. Drag/copy `firmware.uf2` onto that drive: the board flashes itself and
+   reboots automatically.
+6. Open the serial monitor (`pio device monitor -b 115200`) to check radio
    init and sensor reception.
 
 No display, no user button and no LED feedback on this board in this release
@@ -521,17 +544,24 @@ this firmware (LoRa bridge only, same as the XIAO).
   LoRa module fitted.
 - Data‑capable USB‑C cable.
 
+This clone's bootloader shows up as a **USB drive** (mass storage, e.g.
+"NICENANOBOOT"), not a serial port: `pio run -t upload` (nrfutil protocol)
+finds nothing to upload to, so flashing is manual via a `.uf2` file.
+
 **Steps**
 1. Connect the board over USB‑C.
 2. Edit `settings.ini` as for the Heltec.
-3. Build & upload:
+3. Build (no `-t upload`):
    ```bash
-   pio run -e groupA_faketec_htra62 -t upload
+   pio run -e groupA_faketec_htra62
    ```
-   If the upload doesn't start, enter the UF2 bootloader manually with a
-   **double‑tap** of the **RST** button (standard behaviour of the Adafruit
-   nRF52 bootloader used by the Pro Micro), then re‑run the upload.
-4. Open the serial monitor (`pio device monitor -b 115200`) to check radio
+   This produces `.pio/build/groupA_faketec_htra62/firmware.uf2`.
+4. Enter the bootloader with a **double‑tap** of the **RST** button (standard
+   behaviour of the Adafruit nRF52 bootloader used by the Pro Micro): a new
+   USB drive appears on your PC.
+5. Drag/copy `firmware.uf2` onto that drive: the board flashes itself and
+   reboots automatically.
+6. Open the serial monitor (`pio device monitor -b 115200`) to check radio
    init and sensor reception.
 
 No display, no user button and no LED feedback on this board in this release
@@ -552,6 +582,7 @@ sensors_catalog.json        # FONTE DI VERITÀ: sensori, gruppi, capability, sor
 tools/
   apply_settings.py         # [meshtastic] -> include/user_config.h (MESH_*, RX_*)
   configure_sensors.py      # [sensors] + catalogo -> generated_config.h + src_filter
+  build_uf2.py              # post-build MASN/FakeTec: .hex -> .uf2 (bootloader mass-storage)
   configurator/index.html   # configuratore web (genera tutto il settings.ini)
 include/user_config.h        # generato (rete/nodo)
 src/
