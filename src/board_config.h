@@ -16,11 +16,12 @@
 //     platform ufficiale nordicnrf52).
 //   - FakeTec — NRF52840 Pro Micro + modulo LoRa HT-RA62 (PCB DIY, v3/v4/v5 —
 //     https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/,
-//     repo gargomoma/fakeTec_pcb). Nessun display, nessun PIN_BUTTON/
-//     HAS_STATUS_LED attivo in questa prima versione (la scheda ha 2 pulsanti
-//     fisici sulle revisioni v3+, ma il pin esatto non e' confermato). Usa la
-//     stessa board/variant locale condivisa con MASN (stesso schema community
-//     "nRF52 Pro-micro DIY" per il modulo HT-RA62).
+//     repo gargomoma/fakeTec_pcb). Nessun display; pinout LoRa/batteria
+//     CONFERMATO dallo schematico ufficiale v5 (vedi blocco BOARD_FAKETEC
+//     piu' sotto), pulsante utente esiste ma il suo GPIO raw non e' ancora
+//     mappato -> PIN_BUTTON/HAS_STATUS_LED non attivi in questa prima
+//     versione. Usa la stessa board/variant locale condivisa con MASN
+//     (stesso schema community "nRF52 Pro-micro DIY" per il modulo HT-RA62).
 // ============================================================================
 #pragma once
 
@@ -147,25 +148,41 @@
   // FakeTec — NRF52840 Pro Micro + modulo LoRa HT-RA62 (PCB DIY community,
   // v3/v4/v5 — vedi repo gargomoma/fakeTec_pcb e l'articolo adrelien.com).
   // Nessun HAS_OLED (display/display_none.cpp fornisce le gfx* no-op).
-  // Nessun PIN_BUTTON / HAS_STATUS_LED in questa prima versione: le revisioni
-  // v3+ hanno 2 pulsanti fisici sul PCB, ma non e' confermato quale GPIO
-  // corrisponda al "tasto utente" ne' se esista un LED pilotabile via
-  // firmware -> menu di invio manuale e feedback LED restano disattivati
-  // finche' non si verifica lo schematico reale (stessa scelta prudente gia'
-  // fatta per BOARD_MASN_HTRA62 qui sopra).
+  // Nessun PIN_BUTTON / HAS_STATUS_LED in questa prima versione. Lo
+  // schematico v5 mostra 2 pulsanti: RST_BTN (SW1, reset hardware) e un BTN
+  // "programmabile" (SW2), quest'ultimo sull'header destro del NiceNano con
+  // l'annotazione "connected to D6" — quindi un tasto utente reale ESISTE,
+  // ma il GPIO raw nRF52 (P0.xx/P1.xx) dietro quell'alias "D6" non e' stato
+  // identificato in questa prima versione -> PIN_BUTTON resta non definito
+  // finche' non si mappa quel pin (nessun LED pilotabile via firmware
+  // individuato sullo schematico). Menu di invio manuale e feedback LED
+  // restano quindi disattivati per ora (stessa scelta prudente gia' fatta
+  // per BOARD_MASN_HTRA62 qui sopra).
   #define BOARD_NAME "FakeTec (NRF52840 Pro Micro + HT-RA62)"
 
   // ==========================================================================
-  // ATTENZIONE — PINOUT NON VERIFICATO SULL'HARDWARE REALE.
-  // Il repo ufficiale gargomoma/fakeTec_pcb indica di usare il profilo
-  // Meshtastic "nrf52_promicro_diy_tcxo" per moduli E22/HT-RA62 (lo stesso
-  // schema community "nRF52 ProMicro DIY + TCXO" gia' usato per derivare il
-  // blocco BOARD_MASN_HTRA62 qui sopra) — da cui sono stati derivati gli
-  // STESSI numeri di pin (notazione raw nRF52 "porta*32+pin", es. P1.13 =
-  // 1*32+13 = 45). NON E' PERO' CONFERMATO dallo schematico FakeTec reale ne'
-  // testato su un modulo HT-RA62 reale. Verificare con multimetro/schematico
-  // PRIMA del primo upload: un pinout SPI errato puo' danneggiare il modulo
-  // HT-RA62 o il Pro Micro.
+  // PINOUT CONFERMATO dallo schematico ufficiale FakeTec v5
+  // (design_files/ShimonHoranek_fakeTecv5schematics.pdf nel repo
+  // gargomoma/fakeTec_pcb, KiCad, rev. 2025-03-19): il blocco "NicetNano
+  // nrf52840 microcontroller" instrada l'header sinistro nell'esatta sequenza
+  // RST, DIO1, SCK, CS, MOSI, MISO, BUSY, BattX verso il modulo HT-RA62/
+  // RA-01SH, e RXEN e' presente come rete dedicata. Incrociato con lo schema
+  // di riferimento ufficiale Meshtastic "Pro-micro Pinouts"
+  // (variants/nrf52840/diy/nrf52_promicro_diy_tcxo/Schematic_Pro-micro_Pinouts_*.pdf),
+  // che mostra la stessa identica sequenza posizionale sul connettore
+  // standard PRO_MICRO_NRF52840_26P: pin14=P0.09(RST), pin15=P0.10(DIO1),
+  // pin16=P1.11(SCK), pin17=P1.13(CS), pin18=P1.15(MOSI), pin19=P0.02(MISO),
+  // pin20=P0.29(BUSY), pin21=P0.31(BATT), con RXEN=P0.17 collegato all'HT-RA62.
+  // Le due fonti indipendenti combaciano esattamente (notazione raw nRF52
+  // "porta*32+pin", es. P1.13 = 1*32+13 = 45) — sono gli STESSI numeri gia'
+  // usati nel blocco BOARD_MASN_HTRA62 qui sopra (per MASN pero' lo
+  // schematico reale non e' stato controllato, resta dedotto).
+  // Verificato solo sulla revisione v5: le revisioni precedenti (v3/v4)
+  // dovrebbero condividere lo stesso routing LoRa (cambia solo il circuito
+  // di ricarica batteria), ma non e' stato controllato schematico alla mano.
+  // Un rapido controllo di continuita' col multimetro prima del primo upload
+  // resta comunque buona norma, non piu' per dubbio sul pinout ma come
+  // verifica standard pre power-on.
   // ==========================================================================
   #define PIN_LORA_MISO  2          // P0.02
   #define PIN_LORA_MOSI  47         // P1.15  (1*32+15)
@@ -178,13 +195,15 @@
   #define RADIO_TCXO_VOLTAGE 1.8f
 
   // Batteria: lettura ADC nRF52 generica (vedi battery_nrf52_promicro_diy.cpp).
-  // Pin VBAT desunto dallo stesso schema DIY di riferimento (P0.31); nessun
-  // pin di enable dedicato noto per FakeTec. Coefficienti di conversione
-  // mV/percentuale in battery_nrf52_promicro_diy.cpp sono PLACEHOLDER da
-  // calibrare con un multimetro sull'hardware reale (il circuito di carica
-  // FakeTec ha un jumper BOOST che incide sulla corrente di carica, non sul
-  // partitore di lettura VBAT, ma va comunque verificato).
+  // Pin VBAT confermato dallo schematico FakeTec v5 (net "BattX", stessa
+  // sequenza posizionale di RST/DIO1/SCK/CS/MOSI/MISO/BUSY -> P0.31, vedi
+  // nota sopra). Nessun pin di enable dedicato: il partitore (R4=10M,
+  // R5=10M verso GND, rapporto 1:2 -> VBAT_DIVIDER_COMP=2.0f sotto) resta
+  // sempre collegato, corrente trascurabile (~165nA a 3.3V) quindi non serve
+  // un pin di enable. Il jumper BOOST del circuito di carica FakeTec incide
+  // sulla corrente di ricarica, non su questo partitore di lettura.
   #define PIN_VBAT_READ  31         // P0.31
+  #define VBAT_DIVIDER_COMP 2.0f    // R4=10M / R5=10M verso GND (schematico v5)
 
   #define MESH_HW_MODEL  255  // PRIVATE_HW: nessun HardwareModel Meshtastic dedicato a FakeTec
 

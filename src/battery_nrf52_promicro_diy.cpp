@@ -1,12 +1,12 @@
 // ============================================================================
 // battery_nrf52_promicro_diy.cpp — lettura VBAT su schede DIY nRF52840 in
 //   formato Pro-Micro/NiceNano + HT-RA62 (MASN, FakeTec — vedi board_config.h).
-//   ATTENZIONE: i coefficienti di conversione sotto sono PLACEHOLDER (divisore
-//   1:1, nessuna compensazione) — non e' noto lo schema reale del partitore
-//   di VBAT ne' per MASN (BMS/circuito di ricarica solare) ne' per FakeTec
-//   (circuito di ricarica con jumper BOOST). Vanno calibrati con un
-//   multimetro sull'hardware reale prima di fidarsi della percentuale
-//   riportata. Vedi PIN_VBAT_READ in board_config.h (anch'esso da verificare).
+//   Il partitore VBAT (VBAT_DIVIDER_COMP) e' confermato per FakeTec dallo
+//   schematico ufficiale v5 (R4=10M/R5=10M, vedi board_config.h), resta
+//   invece un PLACEHOLDER non verificato per MASN (nessuno schematico reale
+//   controllato) — vanno comunque ricalibrati/confermati con un multimetro
+//   sull'hardware reale prima di fidarsi ciecamente della percentuale
+//   riportata (la curva LiPo sotto e' comunque solo un'approssimazione).
 // ============================================================================
 #include "battery.h"
 #include "board_config.h"
@@ -17,11 +17,13 @@
 // mV per LSB con ADC a 12 bit e fondo scala 3.0V (riferimento interno
 // AR_INTERNAL_3_0): 3000/4096 = 0.732421875.
 #define VBAT_MV_PER_LSB   0.732421875f
-// PLACEHOLDER: nessuna compensazione di partitore nota per queste board
-// (assume lettura diretta o partitore 1:1). Da correggere dopo verifica
-// hardware, board per board (il partitore puo' differire tra MASN e FakeTec
-// anche a parita' di pin ADC).
+// Compensazione partitore: FakeTec la definisce in board_config.h (R4=10M/
+// R5=10M -> 2.0f, confermato dallo schematico v5). Per MASN resta un
+// PLACEHOLDER 1:1 non verificato (nessuno schematico reale controllato):
+// da correggere dopo verifica hardware.
+#ifndef VBAT_DIVIDER_COMP
 #define VBAT_DIVIDER_COMP (1.0f)
+#endif
 
 // Curva LiPo semplificata (scarica a riposo), lineare a tratti.
 static const struct { float v; int pct; } CURVE[] = {

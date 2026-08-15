@@ -255,17 +255,20 @@ LoRa, come la XIAO).
 
 ### How‑to: flashare la scheda FakeTec (NRF52840 Pro Micro + HT‑RA62)
 
-> ⚠️ **Supporto sperimentale, pinout non verificato.** I pin LoRa/batteria in
-> `src/board_config.h` (blocco `BOARD_FAKETEC`) sono dedotti dal profilo
-> pubblico "NRF52 Pro‑micro DIY" indicato dal repo ufficiale FakeTec per il
-> firmware Meshtastic (`nrf52_promicro_diy_tcxo`, per moduli E22/HT‑RA62),
-> **non** dallo schematico reale della scheda né testati su un modulo HT‑RA62
-> reale. Confronta lo schematico/gerber del repo
-> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb) (vedi
+> ⚠️ **Supporto sperimentale, mai testato su un dispositivo reale.** I pin
+> LoRa/batteria in `src/board_config.h` (blocco `BOARD_FAKETEC`) sono
+> **confermati dallo schematico ufficiale FakeTec v5**
+> (`design_files/ShimonHoranek_fakeTecv5schematics.pdf` nel repo
+> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb)),
+> incrociato con lo schema di riferimento ufficiale Meshtastic "Pro‑micro
+> Pinouts" (`nrf52_promicro_diy_tcxo`) — le due fonti indipendenti
+> combaciano pin per pin. Non è stato però controllato su un modulo HT‑RA62
+> né su una FakeTec fisica, e solo la revisione v5 è stata verificata a
+> schematico (v3/v4 dovrebbero condividere lo stesso routing LoRa, cambia
+> solo il circuito di ricarica batteria). Un rapido controllo di continuità
+> col multimetro prima del primo upload resta comunque buona norma. Vedi
 > anche l'articolo
-> [adrelien.com](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/))
-> con i pin in `board_config.h` **prima** del primo upload: un pinout SPI
-> errato può danneggiare il modulo HT‑RA62 o il Pro Micro.
+> [adrelien.com](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/).
 
 **Prerequisiti**
 - [PlatformIO](https://platformio.org/).
@@ -498,17 +501,19 @@ this firmware (LoRa bridge only, same as the XIAO).
 
 ### How‑to: flashing the FakeTec board (NRF52840 Pro Micro + HT‑RA62)
 
-> ⚠️ **Experimental support, pinout not verified.** The LoRa/battery pins in
-> `src/board_config.h` (`BOARD_FAKETEC` block) are derived from the public
-> "NRF52 Pro‑micro DIY" profile the official FakeTec repo points to for the
-> Meshtastic firmware (`nrf52_promicro_diy_tcxo`, for E22/HT‑RA62 modules),
-> **not** from the board's real schematic, and haven't been tested on a real
-> HT‑RA62 module. Compare the schematic/gerbers from
-> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb) (see
-> also the
-> [adrelien.com article](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/))
-> against the pins in `board_config.h` **before** the first upload: a wrong
-> SPI pinout can damage the HT‑RA62 module or the Pro Micro.
+> ⚠️ **Experimental support, never tested on real hardware.** The LoRa/
+> battery pins in `src/board_config.h` (`BOARD_FAKETEC` block) are
+> **confirmed by the official FakeTec v5 schematic**
+> (`design_files/ShimonHoranek_fakeTecv5schematics.pdf` in the
+> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb) repo),
+> cross‑checked against the official Meshtastic "Pro‑micro Pinouts"
+> reference (`nrf52_promicro_diy_tcxo`) — both independent sources match pin
+> for pin. It hasn't been tested on a real HT‑RA62 module or a physical
+> FakeTec board though, and only revision v5 was checked against a
+> schematic (v3/v4 should share the same LoRa routing, only the charging
+> circuit differs). A quick continuity check with a multimeter before the
+> first upload is still good practice. See also the
+> [adrelien.com article](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/).
 
 **Prerequisites**
 - [PlatformIO](https://platformio.org/).
