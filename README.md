@@ -4,16 +4,21 @@ Gateway modulare che riceve sensori meteo wireless a **868 MHz** (GFSK) e li
 ritrasmette sulla rete **Meshtastic** (LoRa), con display OLED, sincronizzazione
 oraria dalla rete e bollettini meteo/astronomici automatici.
 Hardware supportato: **Heltec WiFi LoRa 32 V3 / V4** (ESP32‑S3 + Semtech
-**SX1262**, con display OLED) e **Seeed XIAO nRF52840 + Wio‑SX1262 Kit**
+**SX1262**, con display OLED), **Seeed XIAO nRF52840 + Wio‑SX1262 Kit**
 (nRF52840 + SX1262, **senza display**: nessuna schermata/grafico/menu di invio
-manuale, feedback della sincronizzazione oraria sul LED RGB onboard).
+manuale, feedback della sincronizzazione oraria sul LED RGB onboard) e, in via
+**sperimentale** (pinout non ancora verificato su hardware reale), **MASN
+NiceNano nRF52840 + HT‑RA62** e **FakeTec NRF52840 Pro Micro + HT‑RA62**
+(entrambe nRF52840 + SX1262, senza display).
 
 *Modular gateway that receives 868 MHz wireless weather sensors (GFSK) and bridges
 them onto the **Meshtastic** LoRa network, with network time‑sync and automatic
 weather/astronomy bulletins. Supported hardware: **Heltec WiFi LoRa 32 V3 / V4**
-(ESP32‑S3 + Semtech **SX1262**, with OLED display) and **Seeed XIAO nRF52840 +
+(ESP32‑S3 + Semtech **SX1262**, with OLED display), **Seeed XIAO nRF52840 +
 Wio‑SX1262 Kit** (nRF52840 + SX1262, **no display**: no screens/graphs/manual‑send
-menu, time‑sync feedback on the onboard RGB LED instead).*
+menu, time‑sync feedback on the onboard RGB LED instead) and, **experimentally**
+(pinout not yet verified on real hardware), **MASN NiceNano nRF52840 + HT‑RA62**
+and **FakeTec NRF52840 Pro Micro + HT‑RA62** (both nRF52840 + SX1262, no display).*
 
 **Versione attuale: v1.2.1**
 
@@ -144,9 +149,13 @@ A ogni build due script di pre‑build aggiornano la configurazione:
 pio run -e groupA_heltec_v3 -t upload         # Gruppo A, Heltec V3
 pio run -e groupA_heltec_v4 -t upload         # Gruppo A, Heltec V4
 pio run -e groupA_xiao_wiosx1262 -t upload    # Gruppo A, XIAO nRF52840 + Wio-SX1262
+pio run -e groupA_masn_htra62 -t upload       # Gruppo A, MASN NiceNano + HT-RA62 (sperim.)
+pio run -e groupA_faketec_htra62 -t upload    # Gruppo A, FakeTec Pro Micro + HT-RA62 (sperim.)
 pio run -e groupB_heltec_v3 -t upload         # Gruppo B, Heltec V3
 pio run -e groupB_heltec_v4 -t upload         # Gruppo B, Heltec V4
 pio run -e groupB_xiao_wiosx1262 -t upload    # Gruppo B, XIAO nRF52840 + Wio-SX1262
+pio run -e groupB_masn_htra62 -t upload       # Gruppo B, MASN NiceNano + HT-RA62 (sperim.)
+pio run -e groupB_faketec_htra62 -t upload    # Gruppo B, FakeTec Pro Micro + HT-RA62 (sperim.)
 ```
 
 ### How‑to: flashare la scheda Heltec
@@ -208,15 +217,89 @@ onboard** dà il feedback al posto dello schermo: **blu lampeggiante** = in
 ascolto, **verde fisso** (~3 s) = orario confermato, **rosso lampeggiante** =
 finestra scaduta senza conferma.
 
+### How‑to: flashare la scheda MASN (NiceNano nRF52840 + HT‑RA62)
+
+> ⚠️ **Supporto sperimentale, pinout non verificato.** I pin LoRa/batteria in
+> `src/board_config.h` (blocco `BOARD_MASN_HTRA62`) sono dedotti dal profilo
+> pubblico "NRF52 Pro‑micro DIY" indicato dalla stessa documentazione MASN per
+> il flasher Meshtastic ufficiale, **non** dallo schematico reale della
+> scheda. Confronta `Schematic_masn-ht-ra62.pdf` (repo
+> [`danielcharrua/masn-meshtastic-autonomous-solar-node`](https://github.com/danielcharrua/masn-meshtastic-autonomous-solar-node))
+> con i pin in `board_config.h` **prima** del primo upload: un pinout SPI
+> errato può danneggiare il modulo HT‑RA62 o il NiceNano.
+
+**Prerequisiti**
+- [PlatformIO](https://platformio.org/).
+- Scheda **MASN** variante **HT‑RA62** (NiceNano nRF52840).
+- Cavo USB‑C dati.
+
+**Passi**
+1. Collega la scheda via USB‑C.
+2. Modifica `settings.ini` come per la Heltec.
+3. Compila e carica:
+   ```bash
+   pio run -e groupA_masn_htra62 -t upload
+   ```
+   Se l'upload non parte, entra manualmente in bootloader UF2 con un
+   **doppio‑tap** del tasto **RST** (comportamento standard del bootloader
+   Adafruit nRF52 usato dal NiceNano), poi rilancia l'upload.
+4. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
+   l'inizializzazione radio e la ricezione dei sensori.
+
+Nessun display, nessun tasto utente e nessun feedback LED su questa scheda in
+questa release (la scheda ha fisicamente 2 pulsanti + 2 switch, ma il pin del
+"tasto utente" non è confermato): la navigazione schermate, il menu di invio
+manuale e il feedback di sincronizzazione oraria non sono disponibili. Il
+BME280 e l'INA3221 onboard **non** sono letti da questo firmware (solo bridge
+LoRa, come la XIAO).
+
+### How‑to: flashare la scheda FakeTec (NRF52840 Pro Micro + HT‑RA62)
+
+> ⚠️ **Supporto sperimentale, pinout non verificato.** I pin LoRa/batteria in
+> `src/board_config.h` (blocco `BOARD_FAKETEC`) sono dedotti dal profilo
+> pubblico "NRF52 Pro‑micro DIY" indicato dal repo ufficiale FakeTec per il
+> firmware Meshtastic (`nrf52_promicro_diy_tcxo`, per moduli E22/HT‑RA62),
+> **non** dallo schematico reale della scheda né testati su un modulo HT‑RA62
+> reale. Confronta lo schematico/gerber del repo
+> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb) (vedi
+> anche l'articolo
+> [adrelien.com](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/))
+> con i pin in `board_config.h` **prima** del primo upload: un pinout SPI
+> errato può danneggiare il modulo HT‑RA62 o il Pro Micro.
+
+**Prerequisiti**
+- [PlatformIO](https://platformio.org/).
+- Scheda **FakeTec PCB** (v3/v4/v5) con **NRF52840 Pro Micro** + modulo LoRa
+  **HT‑RA62** montati.
+- Cavo USB‑C dati.
+
+**Passi**
+1. Collega la scheda via USB‑C.
+2. Modifica `settings.ini` come per la Heltec.
+3. Compila e carica:
+   ```bash
+   pio run -e groupA_faketec_htra62 -t upload
+   ```
+   Se l'upload non parte, entra manualmente in bootloader UF2 con un
+   **doppio‑tap** del tasto **RST** (comportamento standard del bootloader
+   Adafruit nRF52 usato dal Pro Micro), poi rilancia l'upload.
+4. Apri il monitor seriale (`pio device monitor -b 115200`) per verificare
+   l'inizializzazione radio e la ricezione dei sensori.
+
+Nessun display, nessun tasto utente e nessun feedback LED su questa scheda in
+questa release (le revisioni v3+ hanno fisicamente 2 pulsanti sul PCB, ma il
+pin del "tasto utente" non è confermato): la navigazione schermate, il menu di
+invio manuale e il feedback di sincronizzazione oraria non sono disponibili.
+
 ### Matrice hardware
 
-| | Heltec V3 | Heltec V4 | XIAO nRF52840 + Wio‑SX1262 |
-|--|--|--|--|
-| MCU / radio | ESP32‑S3 + SX1262 | ESP32‑S3 + SX1262 | nRF52840 + SX1262 |
-| Display | OLED SSD1306 128×64 | OLED SSD1306 128×64 | assente (feedback su LED RGB) |
-| Tasto utente / menu invio manuale | sì (PRG) | sì (PRG) | non disponibile |
-| Gruppo A | `groupA_heltec_v3` | `groupA_heltec_v4` | `groupA_xiao_wiosx1262` |
-| Gruppo B | `groupB_heltec_v3` | `groupB_heltec_v4` | `groupB_xiao_wiosx1262` |
+| | Heltec V3 | Heltec V4 | XIAO nRF52840 + Wio‑SX1262 | MASN NiceNano + HT‑RA62 | FakeTec Pro Micro + HT‑RA62 |
+|--|--|--|--|--|--|
+| MCU / radio | ESP32‑S3 + SX1262 | ESP32‑S3 + SX1262 | nRF52840 + SX1262 | nRF52840 + SX1262 (sperim.) | nRF52840 + SX1262 (sperim.) |
+| Display | OLED SSD1306 128×64 | OLED SSD1306 128×64 | assente (feedback su LED RGB) | assente (nessun feedback LED) | assente (nessun feedback LED) |
+| Tasto utente / menu invio manuale | sì (PRG) | sì (PRG) | non disponibile | non disponibile | non disponibile |
+| Gruppo A | `groupA_heltec_v3` | `groupA_heltec_v4` | `groupA_xiao_wiosx1262` | `groupA_masn_htra62` | `groupA_faketec_htra62` |
+| Gruppo B | `groupB_heltec_v3` | `groupB_heltec_v4` | `groupB_xiao_wiosx1262` | `groupB_masn_htra62` | `groupB_faketec_htra62` |
 
 ### Note
 
@@ -331,6 +414,8 @@ and `configure_sensors.py` (sensors → `src/config/generated_config.h` +
 ```bash
 pio run -e groupA_heltec_v4 -t upload         # or _v3 / groupB_*
 pio run -e groupA_xiao_wiosx1262 -t upload    # Seeed XIAO nRF52840 + Wio-SX1262
+pio run -e groupA_masn_htra62 -t upload       # MASN NiceNano nRF52840 + HT-RA62 (experimental)
+pio run -e groupA_faketec_htra62 -t upload    # FakeTec NRF52840 Pro Micro + HT-RA62 (experimental)
 ```
 
 ### How‑to: flashing the Heltec board
@@ -376,12 +461,87 @@ the ~5‑minute time‑sync window the **onboard RGB LED** gives feedback
 instead: **blinking blue** = listening, **solid green** (~3 s) = time
 confirmed, **blinking red** = window expired without confirmation.
 
+### How‑to: flashing the MASN board (NiceNano nRF52840 + HT‑RA62)
+
+> ⚠️ **Experimental support, pinout not verified.** The LoRa/battery pins in
+> `src/board_config.h` (`BOARD_MASN_HTRA62` block) are derived from the public
+> "NRF52 Pro‑micro DIY" profile MASN's own docs point to for the official
+> Meshtastic flasher, **not** from the board's real schematic. Compare
+> `Schematic_masn-ht-ra62.pdf` (repo
+> [`danielcharrua/masn-meshtastic-autonomous-solar-node`](https://github.com/danielcharrua/masn-meshtastic-autonomous-solar-node))
+> against the pins in `board_config.h` **before** the first upload: a wrong
+> SPI pinout can damage the HT‑RA62 module or the NiceNano.
+
+**Prerequisites**
+- [PlatformIO](https://platformio.org/).
+- A **MASN** board, **HT‑RA62** variant (NiceNano nRF52840).
+- Data‑capable USB‑C cable.
+
+**Steps**
+1. Connect the board over USB‑C.
+2. Edit `settings.ini` as for the Heltec.
+3. Build & upload:
+   ```bash
+   pio run -e groupA_masn_htra62 -t upload
+   ```
+   If the upload doesn't start, enter the UF2 bootloader manually with a
+   **double‑tap** of the **RST** button (standard behaviour of the Adafruit
+   nRF52 bootloader used by the NiceNano), then re‑run the upload.
+4. Open the serial monitor (`pio device monitor -b 115200`) to check radio
+   init and sensor reception.
+
+No display, no user button and no LED feedback on this board in this release
+(the board physically has 2 buttons + 2 switches, but the "user button" pin
+isn't confirmed): screen navigation, the manual‑send menu and time‑sync
+feedback aren't available. The onboard BME280 and INA3221 are **not** read by
+this firmware (LoRa bridge only, same as the XIAO).
+
+### How‑to: flashing the FakeTec board (NRF52840 Pro Micro + HT‑RA62)
+
+> ⚠️ **Experimental support, pinout not verified.** The LoRa/battery pins in
+> `src/board_config.h` (`BOARD_FAKETEC` block) are derived from the public
+> "NRF52 Pro‑micro DIY" profile the official FakeTec repo points to for the
+> Meshtastic firmware (`nrf52_promicro_diy_tcxo`, for E22/HT‑RA62 modules),
+> **not** from the board's real schematic, and haven't been tested on a real
+> HT‑RA62 module. Compare the schematic/gerbers from
+> [`gargomoma/fakeTec_pcb`](https://github.com/gargomoma/fakeTec_pcb) (see
+> also the
+> [adrelien.com article](https://adrelien.com/diy-meshtastic-how-to-build-your-own-meshtastic-device-with-faketec-pcb-nrf52840/))
+> against the pins in `board_config.h` **before** the first upload: a wrong
+> SPI pinout can damage the HT‑RA62 module or the Pro Micro.
+
+**Prerequisites**
+- [PlatformIO](https://platformio.org/).
+- A **FakeTec PCB** (v3/v4/v5) with an **NRF52840 Pro Micro** + **HT‑RA62**
+  LoRa module fitted.
+- Data‑capable USB‑C cable.
+
+**Steps**
+1. Connect the board over USB‑C.
+2. Edit `settings.ini` as for the Heltec.
+3. Build & upload:
+   ```bash
+   pio run -e groupA_faketec_htra62 -t upload
+   ```
+   If the upload doesn't start, enter the UF2 bootloader manually with a
+   **double‑tap** of the **RST** button (standard behaviour of the Adafruit
+   nRF52 bootloader used by the Pro Micro), then re‑run the upload.
+4. Open the serial monitor (`pio device monitor -b 115200`) to check radio
+   init and sensor reception.
+
+No display, no user button and no LED feedback on this board in this release
+(v3+ revisions physically have 2 buttons on the PCB, but the "user button"
+pin isn't confirmed): screen navigation, the manual‑send menu and time‑sync
+feedback aren't available.
+
 ---
 
 ## Struttura del progetto / Project layout
 
 ```
-platformio.ini              # env: groupA/B × heltec_v3/v4/xiao_wiosx1262
+platformio.ini              # env: groupA/B × heltec_v3/v4/xiao_wiosx1262/masn_htra62/faketec_htra62
+boards/                     # board.json locale al progetto (nRF52 ProMicro DIY + HT-RA62)
+variants/                   # variant.h/.cpp locale al progetto (idem, condiviso MASN+FakeTec)
 settings.ini                # [meshtastic] (parità EcoWitt) + [sensors]
 sensors_catalog.json        # FONTE DI VERITÀ: sensori, gruppi, capability, sorgenti
 tools/
@@ -391,7 +551,7 @@ tools/
 include/user_config.h        # generato (rete/nodo)
 src/
   main.cpp                  # dispatch: match -> parse -> uiSubmit -> meshSubmit
-  board_config.h             # pin per scheda (Heltec V3/V4, XIAO+Wio-SX1262)
+  board_config.h             # pin per scheda (Heltec V3/V4, XIAO+Wio-SX1262, MASN/FakeTec+HT-RA62)
   config/generated_config.h # generato (RADIO_*, ENABLE_*, SCREEN_*)
   radio/                    # gestore unico SX1262 a 3 modalità
   sensors/                  # sensor_types.h, registry, sensor_util.h, fineoffset/ lacrosse/ bresser/
@@ -399,7 +559,7 @@ src/
                              #   display_oled.cpp (HAS_OLED) / display_none.cpp (senza display)
   mesh/                     # meshtastic_pack.{h,cpp}
   timesync.{h,cpp}  astro.{h,cpp}  history.h
-  battery.h  battery_esp32.cpp  battery_nrf52.cpp
+  battery.h  battery_esp32.cpp  battery_nrf52.cpp  battery_nrf52_promicro_diy.cpp
   led_status.{h,cpp}        # feedback time-sync su LED RGB (schede senza display)
 ```
 
