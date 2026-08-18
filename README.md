@@ -20,27 +20,17 @@ menu, time‑sync feedback on the onboard RGB LED instead) and, **experimentally
 (pinout not yet verified on real hardware), **MASN NiceNano nRF52840 + HT‑RA62**
 and **FakeTec NRF52840 Pro Micro + HT‑RA62** (both nRF52840 + SX1262, no display).*
 
-**Versione attuale: v1.2.1**
+**Versione attuale: v1.2.2**
 
 **Novità in questa release:**
-- Fix: il bollettino meteo mostra i fulmini accumulati nelle **ultime 24h**
-  invece del totale cumulativo del sensore (mai azzerato).
-- Fix: pioggia 1h/24h non collassa più sull'intero contatore dopo un reset
-  del sensore (es. cambio batterie sui pluviometri piezo).
-- Fix: il bollettino meteo non veniva più troncato in coda al messaggio.
+- Fix: l'avviso fulmini viene ora inviato su **entrambi** i canali (principale
+  + testo), non più solo sul canale testo (METEOLAZIO).
 
-*Current version: v1.2.1*
+*Current version: v1.2.2*
 
 *What's new in this release:*
-- *Fix: the weather bulletin now shows lightning strikes accumulated in the
-  **last 24h** instead of the sensor's cumulative (never‑reset) total.*
-- *Fix: 1h/24h rainfall no longer collapses onto the full counter after a
-  sensor reset (e.g. battery change on piezo rain gauges).*
-- *Fix: the weather bulletin was no longer being truncated at the end of the
-  message.*
-- *Weather bulletins never exceed the Meshtastic 200‑byte text limit anymore —
-  when space runs short, the least essential fields (astro, date/time, link)
-  are dropped whole and in priority order, never truncating a value mid‑field.*
+- *Fix: the lightning alert is now sent on **both** channels (primary +
+  text), no longer only on the text channel (METEOLAZIO).*
 
 ---
 
@@ -64,7 +54,7 @@ and **FakeTec NRF52840 Pro Micro + HT‑RA62** (both nRF52840 + SX1262, no displ
   testo non supera mai il limite Meshtastic di 200 byte: a corto di spazio si
   scartano per intero (mai a metà) prima i campi meno essenziali — astro,
   data/ora, link — mantenendo sempre i dati sensore.
-- **Avvisi fulmini** sul canale testo con soglia configurabile.
+- **Avvisi fulmini** su entrambi i canali (principale + testo) con soglia configurabile.
 - **Invio manuale dei bollettini**: pressione **prolungata** del tasto PRG →
   menu a finestra per scegliere il canale (Ch0/Ch1) → conferma invio; ogni
   sottomenu ha la voce "Indietro" e si chiude da solo dopo 10 s di inattività.
@@ -356,7 +346,7 @@ invio manuale e il feedback di sincronizzazione oraria non sono disponibili.
   never exceeds the Meshtastic 200‑byte limit: when space runs short, the
   least essential fields — astro, date/time, link — are dropped whole (never
   mid‑field), always keeping the actual sensor data.
-- **Lightning alerts** on the text channel with a configurable threshold.
+- **Lightning alerts** on both channels (primary + text) with a configurable threshold.
 - **Manual bulletin send**: **long‑press** the PRG button → windowed menu to
   pick the channel (Ch0/Ch1) → confirm; every submenu has a "Back" entry and
   auto‑closes after 10 s of inactivity.
