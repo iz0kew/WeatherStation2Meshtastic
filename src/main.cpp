@@ -94,7 +94,8 @@ static void checkLightningAlert(uint32_t now) {
     snprintf(msg + mn, sizeof(msg) - mn, "\n📅 %02d/%02d/%04d  🕒 %02d:%02d",
              lt.tm_mday, lt.tm_mon + 1, lt.tm_year + 1900, lt.tm_hour, lt.tm_min);
   }
-  meshSendText(msg);   // canale testo (default)
+  meshSendText(msg, 0);   // canale principale (MediumFast)
+  meshSendText(msg, 1);   // canale testo (METEOLAZIO)
   Serial.printf("[mesh] allarme fulmini score=%.2f delta=%lu @%ukm\n",
                 (double)score, (unsigned long)delta, (unsigned)g_ui.lastDistKm);
 }
